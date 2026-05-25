@@ -1,1 +1,1130 @@
 
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>주식노트 | StockNote</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── 디자인 토큰 (라이트 테마) ── */
+    :root {
+      --bg:          #f2f5fb;
+      --surface:     #ffffff;
+      --surface2:    #f7f8fc;
+      --border:      #e5e9f2;
+      --border2:     #d0d7e8;
+      --text:        #111827;
+      --text2:       #4b5563;
+      --text3:       #9ca3af;
+      --green:       #059669;
+      --green-dim:   #ecfdf5;
+      --green-soft:  #d1fae5;
+      --red:         #dc2626;
+      --red-dim:     #fef2f2;
+      --blue:        #2563eb;
+      --blue-dim:    #eff6ff;
+      --blue-soft:   #dbeafe;
+      --amber:       #d97706;
+      --amber-dim:   #fffbeb;
+      --amber-soft:  #fde68a;
+      --purple:      #7c3aed;
+      --shadow-sm:   0 1px 3px rgba(17,24,39,.06), 0 1px 2px rgba(17,24,39,.04);
+      --shadow-md:   0 4px 12px rgba(17,24,39,.08), 0 2px 4px rgba(17,24,39,.04);
+      --shadow-lg:   0 10px 32px rgba(17,24,39,.12), 0 4px 8px rgba(17,24,39,.06);
+      --r:           12px;
+      --r-sm:        8px;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       초기 설정 배너
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    #setup-banner {
+      background: linear-gradient(90deg, #fffbeb 0%, #fef9f0 100%);
+      border-bottom: 1px solid #fde68a;
+      padding: 11px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #setup-banner.hidden { display: none; }
+
+    .banner-tag {
+      font-size: 10px; font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: .8px;
+      color: #92400e;
+      background: #fde68a;
+      padding: 3px 9px; border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .banner-desc {
+      color: #78350f; font-size: 12px; flex: 1; min-width: 160px;
+    }
+
+    #api-url-input {
+      flex: 2; min-width: 260px; max-width: 480px;
+      background: #fff; border: 1px solid #fcd34d;
+      color: var(--text); font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; padding: 7px 12px;
+      border-radius: var(--r-sm); outline: none;
+      transition: border-color .15s;
+      box-shadow: var(--shadow-sm);
+    }
+    #api-url-input:focus { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(217,119,6,.15); }
+    #api-url-input::placeholder { color: #d1d5db; }
+
+    .btn-connect {
+      background: #d97706; color: #fff;
+      border: none; padding: 7px 16px; border-radius: var(--r-sm);
+      font-size: 12px; font-weight: 700; cursor: pointer;
+      font-family: inherit; white-space: nowrap;
+      transition: background .15s; box-shadow: var(--shadow-sm);
+    }
+    .btn-connect:hover { background: #b45309; }
+
+    .btn-text {
+      background: none; border: none; color: #92400e;
+      font-size: 12px; cursor: pointer; text-decoration: underline;
+      font-family: inherit; opacity: .7;
+    }
+    .btn-text:hover { opacity: 1; }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       헤더 / 네비게이션
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    #app-header {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    .header-inner {
+      max-width: 1200px; margin: 0 auto;
+      padding: 0 20px;
+      display: flex; align-items: center; gap: 0;
+    }
+
+    .app-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px; font-weight: 500;
+      color: var(--blue); letter-spacing: -.5px;
+      padding: 14px 22px 14px 0;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+    }
+    .app-logo .ver {
+      font-size: 10px; color: var(--text3); margin-left: 6px;
+    }
+
+    nav { display: flex; flex: 1; }
+
+    .nav-tab {
+      padding: 17px 18px;
+      color: var(--text3); font-size: 13px; font-weight: 500;
+      cursor: pointer; border-bottom: 2px solid transparent;
+      transition: all .2s; white-space: nowrap; user-select: none;
+    }
+    .nav-tab:hover { color: var(--text2); }
+    .nav-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .nav-tab.soon {
+      opacity: .35; cursor: default; pointer-events: none;
+    }
+    .nav-tab.soon::after {
+      content: ' 🔒'; font-size: 10px;
+    }
+
+    .header-end {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 8px; padding-left: 16px;
+    }
+
+    .mode-badge {
+      font-size: 10px; font-family: 'JetBrains Mono', monospace;
+      font-weight: 600; padding: 3px 9px; border-radius: 100px;
+      letter-spacing: .4px;
+    }
+    .mode-badge.local {
+      background: var(--amber-dim); color: var(--amber);
+      border: 1px solid #fcd34d;
+    }
+    .mode-badge.api {
+      background: var(--green-dim); color: var(--green);
+      border: 1px solid #6ee7b7;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       페이지 공통
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .page {
+      max-width: 1200px; margin: 0 auto;
+      padding: 28px 20px;
+      display: none;
+    }
+    .page.active { display: block; }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       통계 카드
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px; margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+    }
+    .stat-card:nth-child(1)::before { background: var(--blue); }
+    .stat-card:nth-child(2)::before { background: var(--green); }
+    .stat-card:nth-child(3)::before { background: #8b5cf6; }
+    .stat-card:nth-child(4)::before { background: var(--amber); }
+    .stat-card:nth-child(5)::before { background: #ec4899; }
+
+    .stat-label {
+      font-size: 11px; color: var(--text3);
+      font-weight: 500; margin-bottom: 8px;
+    }
+
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 24px; font-weight: 500; color: var(--text);
+    }
+    .stat-val.blue  { color: var(--blue); }
+    .stat-val.green { color: var(--green); }
+    .stat-val.amber { color: var(--amber); }
+    .stat-val.red   { color: var(--red); }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       필터 바
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .filter-bar {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+
+    .pills { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+
+    .pill {
+      padding: 5px 13px; border-radius: 100px; font-size: 12px;
+      font-weight: 500; cursor: pointer; user-select: none;
+      border: 1px solid var(--border2); color: var(--text2);
+      background: var(--surface); transition: all .15s; white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+    }
+    .pill:hover  { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+    .pill.active {
+      background: var(--blue); border-color: var(--blue);
+      color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,.3);
+    }
+
+    .search-wrap { position: relative; }
+    .search-wrap svg {
+      position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+      width: 15px; height: 15px; stroke: var(--text3);
+      pointer-events: none;
+    }
+
+    #search-input {
+      background: var(--surface); border: 1px solid var(--border2);
+      color: var(--text); padding: 8px 12px 8px 30px;
+      border-radius: var(--r-sm); font-size: 13px; width: 168px;
+      outline: none; font-family: inherit; transition: all .15s;
+      box-shadow: var(--shadow-sm);
+    }
+    #search-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+    }
+
+    .sel {
+      background: var(--surface); border: 1px solid var(--border2);
+      color: var(--text2); padding: 8px 28px 8px 10px;
+      border-radius: var(--r-sm); font-size: 12px; font-family: inherit;
+      outline: none; cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 9px center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-add {
+      background: var(--blue); color: #fff;
+      border: none; padding: 8px 18px; border-radius: var(--r-sm);
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: all .15s; white-space: nowrap; font-family: inherit;
+      box-shadow: 0 2px 8px rgba(37,99,235,.3);
+    }
+    .btn-add:hover {
+      background: #1d4ed8;
+      box-shadow: 0 4px 14px rgba(37,99,235,.4);
+      transform: translateY(-1px);
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       종목 그리드
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    #stocks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(278px, 1fr));
+      gap: 14px;
+    }
+
+    /* ── 종목 카드 ── */
+    .s-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow .2s, transform .15s;
+    }
+    .s-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-3px);
+    }
+
+    .s-card-body { padding: 16px 16px 12px; }
+
+    .s-card-head {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; margin-bottom: 10px;
+    }
+
+    /* 섹터 배지 */
+    .badge-sector {
+      font-size: 10px; font-weight: 700; padding: 3px 9px;
+      border-radius: 5px; letter-spacing: .3px;
+    }
+
+    /* 보유상태 배지 */
+    .badge-hold {
+      font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 5px;
+    }
+    .badge-hold.보유중  { background: var(--green-dim); color: var(--green); border: 1px solid var(--green-soft); }
+    .badge-hold.관심    { background: var(--blue-dim);  color: var(--blue);  border: 1px solid var(--blue-soft); }
+    .badge-hold.매도완료 { background: #f9fafb; color: var(--text3); border: 1px solid var(--border); }
+
+    .s-name { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .s-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--text3); margin-bottom: 8px;
+    }
+
+    .stars { font-size: 14px; color: #f59e0b; letter-spacing: 1px; margin-bottom: 10px; }
+
+    hr.c-divider { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+
+    .price-row { display: flex; gap: 12px; margin-bottom: 8px; }
+    .price-item { flex: 1; }
+    .price-lbl { font-size: 10px; color: var(--text3); margin-bottom: 3px; font-weight: 500; }
+    .price-val {
+      font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500;
+    }
+    .price-val.t { color: var(--green); }
+    .price-val.s { color: var(--red); }
+
+    .s-memo {
+      font-size: 12px; color: var(--text2);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 8px; background: var(--surface2);
+      border-radius: 6px; padding: 6px 9px;
+    }
+
+    .tags { display: flex; gap: 4px; flex-wrap: wrap; }
+    .tag {
+      font-size: 10px; padding: 2px 8px; border-radius: 4px;
+      background: var(--blue-dim); border: 1px solid var(--blue-soft);
+      color: #1e40af; font-weight: 500;
+    }
+
+    /* 카드 버튼 */
+    .s-card-foot { display: flex; border-top: 1px solid var(--border); background: var(--surface2); }
+    .c-btn {
+      flex: 1; padding: 9px 6px; background: none; border: none;
+      color: var(--text3); font-size: 12px; font-family: inherit;
+      cursor: pointer; transition: all .15s; font-weight: 500;
+    }
+    .c-btn:hover { background: var(--border); color: var(--text2); }
+    .c-btn.edit:hover { color: var(--blue); background: var(--blue-dim); }
+    .c-btn.del:hover  { color: var(--red);  background: var(--red-dim); }
+    .c-btn + .c-btn { border-left: 1px solid var(--border); }
+
+    /* ── 빈 상태 / 로딩 ── */
+    .empty, .loading {
+      grid-column: 1 / -1; text-align: center;
+      padding: 64px 20px; color: var(--text3);
+    }
+    .empty .ei { font-size: 48px; margin-bottom: 14px; }
+    .empty p   { font-size: 14px; margin-bottom: 6px; color: var(--text2); }
+    .empty .hint { font-size: 12px; color: var(--text3); }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 26px; height: 26px;
+      border: 2.5px solid var(--border2); border-top-color: var(--blue);
+      border-radius: 50%; animation: spin .7s linear infinite;
+      margin: 0 auto 14px;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       모달
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(17,24,39,.45);
+      backdrop-filter: blur(4px);
+      z-index: 200; display: flex;
+      align-items: center; justify-content: center;
+      padding: 20px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    .overlay.open { opacity: 1; pointer-events: auto; }
+
+    .modal-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; width: 100%; max-width: 510px;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(16px); transition: transform .22s;
+    }
+    .overlay.open .modal-box { transform: translateY(0); }
+
+    .m-head {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .m-title { font-size: 16px; font-weight: 700; }
+    .m-close {
+      width: 30px; height: 30px;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text3); font-size: 16px; cursor: pointer;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      transition: all .15s; line-height: 1;
+    }
+    .m-close:hover { background: var(--red-dim); border-color: #fca5a5; color: var(--red); }
+
+    .m-body {
+      padding: 20px 24px;
+      max-height: 62vh; overflow-y: auto;
+    }
+    .m-body::-webkit-scrollbar { width: 5px; }
+    .m-body::-webkit-scrollbar-track { background: transparent; }
+    .m-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .fg { display: flex; flex-direction: column; gap: 5px; }
+    .fg.full { grid-column: 1 / -1; }
+    .fg label {
+      font-size: 11px; font-weight: 600; color: var(--text2);
+    }
+
+    .fi, .fs, .ft {
+      background: var(--surface2); border: 1px solid var(--border2);
+      color: var(--text); padding: 9px 12px;
+      border-radius: var(--r-sm); font-size: 13px; font-family: inherit;
+      outline: none; transition: all .15s;
+    }
+    .fi:focus, .fs:focus, .ft:focus {
+      border-color: var(--blue);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+    }
+
+    .fs {
+      appearance: none; cursor: pointer; padding-right: 28px;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+      background-color: var(--surface2);
+    }
+    .fs:focus { background-color: #fff; }
+    .ft { resize: vertical; min-height: 72px; }
+
+    /* 별점 선택기 */
+    .star-row { display: flex; gap: 4px; }
+    .star-btn {
+      background: none; border: none; font-size: 24px;
+      cursor: pointer; color: #d1d5db;
+      transition: color .1s, transform .1s; line-height: 1;
+    }
+    .star-btn.on { color: #f59e0b; }
+    .star-btn:hover { transform: scale(1.15); color: #f59e0b; }
+
+    .m-foot {
+      padding: 14px 24px 20px;
+      display: flex; gap: 9px; justify-content: flex-end;
+      border-top: 1px solid var(--border);
+    }
+    .btn-cancel {
+      background: var(--surface2); border: 1px solid var(--border2);
+      color: var(--text2); padding: 9px 20px; border-radius: var(--r-sm);
+      cursor: pointer; font-size: 13px; font-family: inherit; font-weight: 500;
+      transition: all .15s;
+    }
+    .btn-cancel:hover { background: var(--border); }
+    .btn-save {
+      background: var(--blue); color: #fff;
+      border: none; padding: 9px 24px; border-radius: var(--r-sm);
+      cursor: pointer; font-size: 13px; font-weight: 700;
+      font-family: inherit; transition: all .15s;
+      box-shadow: 0 2px 8px rgba(37,99,235,.3);
+    }
+    .btn-save:hover { background: #1d4ed8; box-shadow: 0 4px 14px rgba(37,99,235,.4); }
+    .btn-save:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       토스트 알림
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    #toasts {
+      position: fixed; bottom: 24px; right: 24px;
+      z-index: 300; display: flex; flex-direction: column; gap: 8px;
+    }
+    .toast {
+      background: #fff; border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 11px 16px;
+      font-size: 13px; color: var(--text);
+      box-shadow: var(--shadow-md);
+      animation: slideIn .22s ease; max-width: 290px;
+    }
+    @keyframes slideIn { from { transform: translateX(18px); opacity:0; } to { transform:none; opacity:1; } }
+    .toast.ok   { border-left: 3px solid var(--green); }
+    .toast.err  { border-left: 3px solid var(--red); }
+    .toast.info { border-left: 3px solid var(--blue); }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       준비 중 페이지
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .soon-page {
+      text-align: center; padding: 80px 20px;
+    }
+    .soon-page .soon-ico { font-size: 52px; margin-bottom: 16px; }
+    .soon-page h2 { font-size: 17px; color: var(--text2); margin-bottom: 8px; font-weight: 600; }
+    .soon-page p { font-size: 13px; color: var(--text3); }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       반응형
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    @media (max-width: 620px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: repeat(2,1fr); }
+      #search-input { width: 124px; }
+      .filter-bar { gap: 7px; }
+      #setup-banner { flex-direction: column; align-items: flex-start; }
+      #api-url-input { min-width: unset; width: 100%; }
+      .nav-tab { padding: 15px 12px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── 초기 설정 배너 ── -->
+<div id="setup-banner">
+  <span class="banner-tag">⚙ SETUP</span>
+  <span class="banner-desc">Apps Script 웹앱 URL을 입력하면 구글 시트로 저장됩니다. 건너뛰면 브라우저 로컬에 저장됩니다.</span>
+  <input id="api-url-input" type="url"
+    placeholder="https://script.google.com/macros/s/…/exec" />
+  <button class="btn-connect" onclick="saveApiUrl()">연결</button>
+  <button class="btn-text" onclick="skipSetup()">건너뛰기</button>
+</div>
+
+<!-- ── 헤더 ── -->
+<header id="app-header">
+  <div class="header-inner">
+    <div class="app-logo">📈 StockNote<span class="ver">v1</span></div>
+    <nav>
+      <div class="nav-tab active" data-page="watchlist">관심종목</div>
+      <div class="nav-tab soon" data-page="journal">매매일지</div>
+      <div class="nav-tab soon" data-page="notes">종목노트</div>
+      <div class="nav-tab soon" data-page="stats">분석·통계</div>
+    </nav>
+    <div class="header-end">
+      <span id="mode-badge" class="mode-badge local">LOCAL</span>
+    </div>
+  </div>
+</header>
+
+<!-- ══ PAGE: 관심종목 ══ -->
+<div id="page-watchlist" class="page active">
+
+  <!-- 통계 카드 -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">전체 종목</div>
+      <div class="stat-val blue"  id="s-total">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">보유 중</div>
+      <div class="stat-val green" id="s-holding">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">관심</div>
+      <div class="stat-val blue"  id="s-watch">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">최다 섹터</div>
+      <div class="stat-val amber" id="s-sector" style="font-size:15px">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">평균 별점</div>
+      <div class="stat-val"       id="s-rating">-</div>
+    </div>
+  </div>
+
+  <!-- 필터 바 -->
+  <div class="filter-bar">
+    <div class="pills" id="sector-pills"></div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 20 20" fill="none" stroke-width="2" stroke-linecap="round">
+        <circle cx="9" cy="9" r="6"/><path d="M15 15l-3.5-3.5"/>
+      </svg>
+      <input id="search-input" type="text" placeholder="종목 검색…" oninput="render()">
+    </div>
+    <select class="sel" id="hold-filter" onchange="render()">
+      <option value="">전체 상태</option>
+      <option value="보유중">보유중</option>
+      <option value="관심">관심</option>
+      <option value="매도완료">매도완료</option>
+    </select>
+    <button class="btn-add" onclick="openModal()">＋ 종목 추가</button>
+  </div>
+
+  <!-- 종목 그리드 -->
+  <div id="stocks-grid">
+    <div class="loading"><div class="spinner"></div><p>불러오는 중…</p></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: 준비 중 ══ -->
+<div id="page-journal" class="page">
+  <div class="soon-page">
+    <div class="soon-ico">📒</div>
+    <h2>매매일지 — 2단계에서 추가됩니다</h2>
+    <p>매수·매도 기록, 수익률 자동 계산, 감정 메모 기능이 포함됩니다.</p>
+  </div>
+</div>
+
+<div id="page-notes" class="page">
+  <div class="soon-page">
+    <div class="soon-ico">🗒</div>
+    <h2>종목노트 — 3단계에서 추가됩니다</h2>
+    <p>종목별 투자 근거, 리스크 체크리스트, 뉴스 링크 저장 기능이 포함됩니다.</p>
+  </div>
+</div>
+
+<div id="page-stats" class="page">
+  <div class="soon-page">
+    <div class="soon-ico">📊</div>
+    <h2>분석·통계 — 4단계에서 추가됩니다</h2>
+    <p>섹터별 비중 차트, 누적 수익률, 승률 분석이 포함됩니다.</p>
+  </div>
+</div>
+
+<!-- ══ 종목 추가/편집 모달 ══ -->
+<div id="modal" class="overlay" onclick="overlayClick(event)">
+  <div class="modal-box">
+    <div class="m-head">
+      <span class="m-title" id="m-title">종목 추가</span>
+      <button class="m-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="m-body">
+      <div class="form-grid">
+
+        <div class="fg">
+          <label>종목코드</label>
+          <input id="f-code" class="fi mono" type="text" placeholder="005930" maxlength="6">
+        </div>
+        <div class="fg">
+          <label>종목명 *</label>
+          <input id="f-name" class="fi" type="text" placeholder="삼성전자">
+        </div>
+
+        <div class="fg">
+          <label>섹터</label>
+          <select id="f-sector" class="fs"></select>
+        </div>
+        <div class="fg">
+          <label>보유 상태</label>
+          <select id="f-holding" class="fs">
+            <option value="관심">관심</option>
+            <option value="보유중">보유중</option>
+            <option value="매도완료">매도완료</option>
+          </select>
+        </div>
+
+        <div class="fg">
+          <label>목표가 (원)</label>
+          <input id="f-target" class="fi mono" type="number" placeholder="85000" min="0">
+        </div>
+        <div class="fg">
+          <label>손절가 (원)</label>
+          <input id="f-stop" class="fi mono" type="number" placeholder="68000" min="0">
+        </div>
+
+        <div class="fg full">
+          <label>태그 (쉼표 구분)</label>
+          <input id="f-tags" class="fi" type="text" placeholder="HBM, AI서버, 수출주">
+        </div>
+
+        <div class="fg full">
+          <label>별점</label>
+          <div class="star-row" id="star-row"></div>
+        </div>
+
+        <div class="fg full">
+          <label>메모</label>
+          <textarea id="f-memo" class="ft" placeholder="투자 근거, 체크 포인트, 관련 종목…"></textarea>
+        </div>
+
+      </div>
+    </div>
+    <div class="m-foot">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-save"   id="btn-save" onclick="saveStock()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 토스트 ── -->
+<div id="toasts"></div>
+
+<!-- ── 풋터 ── -->
+<footer style="margin-top:48px;border-top:1px solid var(--border);background:var(--surface);padding:18px 20px;text-align:center;">
+  <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3);letter-spacing:.4px;">
+    © 2026 <strong style="color:var(--blue);font-weight:600;">sungce</strong> · StockNote
+  </span>
+</footer>
+
+<!-- ════════════════════════════════════════════
+     SCRIPT
+════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ── 섹터 정의 ── */
+const SECTORS = ['AI인프라','반도체','로보틱스','전력기기','2차전지','바이오','방산','금융','기타'];
+const SC = {   // 섹터 컬러 맵 (라이트 테마)
+  'AI인프라':  ['#eff6ff','#1d4ed8'],
+  '반도체':    ['#f5f3ff','#5b21b6'],
+  '로보틱스':  ['#ecfdf5','#065f46'],
+  '전력기기':  ['#fffbeb','#92400e'],
+  '2차전지':   ['#fef2f2','#991b1b'],
+  '바이오':    ['#f0fdf4','#14532d'],
+  '방산':      ['#fff7ed','#9a3412'],
+  '금융':      ['#eef2ff','#3730a3'],
+  '기타':      ['#f9fafb','#374151'],
+};
+
+const LS_URL   = 'sn_api_url';
+const LS_DATA  = 'sn_stocks';
+const LS_SETUP = 'sn_setup';
+
+/* ── 앱 상태 ── */
+const st = {
+  stocks:  [],
+  sector:  '전체',
+  rating:  3,
+  editId:  null,
+};
+
+/* ════════════════════════════════════════════
+   STORE (구글 시트 API ↔ localStorage)
+════════════════════════════════════════════ */
+const Store = {
+  get url()   { return localStorage.getItem(LS_URL) || ''; },
+  get isApi() { return !!this.url; },
+
+  /* 읽기 */
+  async getAll() {
+    if (this.isApi) {
+      try {
+        const r = await fetch(`${this.url}?action=getStocks`);
+        const d = await r.json();
+        if (d.error) throw new Error(d.error);
+        return d;
+      } catch (e) {
+        toast('API 오류: ' + e.message, 'err');
+        return JSON.parse(localStorage.getItem(LS_DATA) || '[]');
+      }
+    }
+    return JSON.parse(localStorage.getItem(LS_DATA) || '[]');
+  },
+
+  /* 쓰기 — API 모드 */
+  async apiPost(body) {
+    const r = await fetch(this.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify(body)
+    });
+    return r.json();
+  },
+
+  /* 추가 */
+  async add(data) {
+    if (this.isApi) {
+      const r = await this.apiPost({ action: 'addStock', data });
+      if (r.error) throw new Error(r.error);
+      return r.id;
+    }
+    const id = Date.now().toString(36) + Math.random().toString(36).substr(2,5);
+    const list = JSON.parse(localStorage.getItem(LS_DATA) || '[]');
+    list.push({ ...data, id, createdAt: new Date().toISOString() });
+    localStorage.setItem(LS_DATA, JSON.stringify(list));
+    return id;
+  },
+
+  /* 수정 */
+  async update(id, data) {
+    if (this.isApi) {
+      const r = await this.apiPost({ action: 'updateStock', id, data });
+      if (r.error) throw new Error(r.error);
+      return;
+    }
+    const list = JSON.parse(localStorage.getItem(LS_DATA) || '[]');
+    const i = list.findIndex(s => s.id === id);
+    if (i >= 0) list[i] = { ...list[i], ...data };
+    localStorage.setItem(LS_DATA, JSON.stringify(list));
+  },
+
+  /* 삭제 */
+  async del(id) {
+    if (this.isApi) {
+      const r = await this.apiPost({ action: 'deleteStock', id });
+      if (r.error) throw new Error(r.error);
+      return;
+    }
+    const list = JSON.parse(localStorage.getItem(LS_DATA) || '[]');
+    localStorage.setItem(LS_DATA, JSON.stringify(list.filter(s => s.id !== id)));
+  }
+};
+
+/* ════════════════════════════════════════════
+   SETUP BANNER
+════════════════════════════════════════════ */
+function saveApiUrl() {
+  const url = document.getElementById('api-url-input').value.trim();
+  if (!url) { toast('URL을 입력해주세요', 'err'); return; }
+  if (!url.includes('script.google.com')) {
+    toast('올바른 Apps Script URL이 아닙니다', 'err'); return;
+  }
+  localStorage.setItem(LS_URL, url);
+  localStorage.setItem(LS_SETUP, '1');
+  hideBanner();
+  updateBadge();
+  loadStocks();
+  toast('✅ 구글 시트 연동 완료!', 'ok');
+}
+
+function skipSetup() {
+  localStorage.setItem(LS_SETUP, '1');
+  hideBanner();
+  toast('로컬 저장 모드로 시작합니다', 'info');
+}
+
+function hideBanner() {
+  document.getElementById('setup-banner').classList.add('hidden');
+}
+
+function updateBadge() {
+  const b = document.getElementById('mode-badge');
+  if (Store.isApi) {
+    b.textContent = 'GOOGLE SHEETS';
+    b.className = 'mode-badge api';
+  } else {
+    b.textContent = 'LOCAL';
+    b.className = 'mode-badge local';
+  }
+}
+
+/* ════════════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════════════ */
+document.querySelectorAll('.nav-tab:not(.soon)').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('page-' + tab.dataset.page).classList.add('active');
+  });
+});
+
+/* ════════════════════════════════════════════
+   RENDER
+════════════════════════════════════════════ */
+function renderPills() {
+  const wrap = document.getElementById('sector-pills');
+  wrap.innerHTML = ['전체', ...SECTORS].map(s =>
+    `<button class="pill ${st.sector === s ? 'active' : ''}"
+       onclick="setSector('${s}')">${s}</button>`
+  ).join('');
+}
+
+function setSector(s) { st.sector = s; renderPills(); render(); }
+
+function getFiltered() {
+  const q  = document.getElementById('search-input').value.trim().toLowerCase();
+  const hf = document.getElementById('hold-filter').value;
+  return st.stocks.filter(s => {
+    const bySec  = st.sector === '전체' || s.sector === st.sector;
+    const byHold = !hf || s.holding === hf;
+    const byQ    = !q
+      || (s.name  || '').toLowerCase().includes(q)
+      || (s.code  || '').toLowerCase().includes(q)
+      || (s.tags  || '').toLowerCase().includes(q);
+    return bySec && byHold && byQ;
+  });
+}
+
+function render() {
+  const grid   = document.getElementById('stocks-grid');
+  const filt   = getFiltered();
+  updateStats();
+
+  if (!filt.length) {
+    grid.innerHTML = `<div class="empty">
+      <div class="ei">📭</div>
+      <p>${st.stocks.length ? '조건에 맞는 종목이 없습니다' : '아직 추가된 종목이 없습니다'}</p>
+      <p class="hint">${st.stocks.length ? '필터를 변경해보세요' : '＋ 종목 추가 버튼을 눌러 시작하세요'}</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filt.map(cardHTML).join('');
+}
+
+function cardHTML(s) {
+  const [bg, fg] = SC[s.sector] || SC['기타'];
+  const stars    = '★'.repeat(s.rating||3) + '☆'.repeat(5-(s.rating||3));
+  const tgt      = s.targetPrice ? '₩' + Number(s.targetPrice).toLocaleString() : '—';
+  const stp      = s.stopLoss    ? '₩' + Number(s.stopLoss).toLocaleString()    : '—';
+  const tagArr   = s.tags ? s.tags.split(',').map(t=>t.trim()).filter(Boolean) : [];
+  const hold     = s.holding || '관심';
+
+  return `<div class="s-card">
+    <div class="s-card-body">
+      <div class="s-card-head">
+        <span class="badge-sector" style="background:${bg};color:${fg}">${s.sector||'기타'}</span>
+        <span class="badge-hold ${hold}">${hold}</span>
+      </div>
+      <div class="s-name">${esc(s.name||'')}</div>
+      <div class="s-code">${s.code||'코드 없음'}</div>
+      <div class="stars">${stars}</div>
+      <hr class="c-divider">
+      <div class="price-row">
+        <div class="price-item">
+          <div class="price-lbl">목표가</div>
+          <div class="price-val t mono">${tgt}</div>
+        </div>
+        <div class="price-item">
+          <div class="price-lbl">손절가</div>
+          <div class="price-val s mono">${stp}</div>
+        </div>
+      </div>
+      ${s.memo ? `<div class="s-memo">💬 ${esc(s.memo)}</div>` : ''}
+      ${tagArr.length ? `<div class="tags">${tagArr.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
+    </div>
+    <div class="s-card-foot">
+      <button class="c-btn edit" onclick="openEdit('${s.id}')">✏ 편집</button>
+      <button class="c-btn del"  onclick="askDel('${s.id}','${esc(s.name||'')}')">✕ 삭제</button>
+    </div>
+  </div>`;
+}
+
+function updateStats() {
+  const all = st.stocks;
+  const holding = all.filter(s => s.holding === '보유중').length;
+  const watch   = all.filter(s => s.holding === '관심').length;
+  const sc      = {};
+  all.forEach(s => { sc[s.sector] = (sc[s.sector]||0) + 1; });
+  const top = Object.keys(sc).sort((a,b)=>sc[b]-sc[a])[0] || '—';
+  const avg = all.length
+    ? (all.reduce((a,s)=>a+Number(s.rating||3),0)/all.length).toFixed(1)
+    : '—';
+
+  document.getElementById('s-total').textContent   = all.length;
+  document.getElementById('s-holding').textContent = holding;
+  document.getElementById('s-watch').textContent   = watch;
+  document.getElementById('s-sector').textContent  = top;
+  document.getElementById('s-rating').textContent  = avg !== '—' ? avg + ' ★' : '—';
+}
+
+/* ════════════════════════════════════════════
+   MODAL
+════════════════════════════════════════════ */
+function renderSectorOpts() {
+  document.getElementById('f-sector').innerHTML =
+    SECTORS.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+function renderStars() {
+  document.getElementById('star-row').innerHTML =
+    [1,2,3,4,5].map(n =>
+      `<button type="button" class="star-btn ${n<=st.rating?'on':''}"
+         onclick="setRating(${n})">★</button>`
+    ).join('');
+}
+
+function setRating(n) { st.rating = n; renderStars(); }
+
+function openModal(stock=null) {
+  st.editId  = stock ? stock.id : null;
+  st.rating  = stock ? Number(stock.rating||3) : 3;
+
+  document.getElementById('m-title').textContent  = stock ? '종목 편집' : '종목 추가';
+  document.getElementById('f-code').value    = stock?.code    || '';
+  document.getElementById('f-name').value    = stock?.name    || '';
+  document.getElementById('f-sector').value  = stock?.sector  || SECTORS[0];
+  document.getElementById('f-holding').value = stock?.holding || '관심';
+  document.getElementById('f-target').value  = stock?.targetPrice || '';
+  document.getElementById('f-stop').value    = stock?.stopLoss    || '';
+  document.getElementById('f-tags').value    = stock?.tags   || '';
+  document.getElementById('f-memo').value    = stock?.memo   || '';
+
+  renderStars();
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('f-name').focus();
+}
+
+function openEdit(id) {
+  openModal(st.stocks.find(s => s.id === id));
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  st.editId = null;
+}
+
+function overlayClick(e) {
+  if (e.target.id === 'modal') closeModal();
+}
+
+async function saveStock() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { toast('종목명을 입력해주세요', 'err'); return; }
+
+  const data = {
+    code:        document.getElementById('f-code').value.trim(),
+    name,
+    sector:      document.getElementById('f-sector').value,
+    holding:     document.getElementById('f-holding').value,
+    targetPrice: Number(document.getElementById('f-target').value) || 0,
+    stopLoss:    Number(document.getElementById('f-stop').value)   || 0,
+    tags:        document.getElementById('f-tags').value.trim(),
+    memo:        document.getElementById('f-memo').value.trim(),
+    rating:      st.rating,
+  };
+
+  const btn = document.getElementById('btn-save');
+  btn.textContent = '저장 중…'; btn.disabled = true;
+
+  try {
+    if (st.editId) {
+      await Store.update(st.editId, data);
+      const i = st.stocks.findIndex(s => s.id === st.editId);
+      if (i >= 0) st.stocks[i] = { ...st.stocks[i], ...data };
+      toast('종목이 수정되었습니다', 'ok');
+    } else {
+      const id = await Store.add(data);
+      st.stocks.unshift({ ...data, id, createdAt: new Date().toISOString() });
+      toast('종목이 추가되었습니다', 'ok');
+    }
+    closeModal(); render();
+  } catch (e) {
+    toast('저장 실패: ' + e.message, 'err');
+  } finally {
+    btn.textContent = '저장'; btn.disabled = false;
+  }
+}
+
+function askDel(id, name) {
+  if (!confirm(`"${name}" 종목을 삭제하시겠습니까?`)) return;
+  delStock(id, name);
+}
+
+async function delStock(id, name) {
+  try {
+    await Store.del(id);
+    st.stocks = st.stocks.filter(s => s.id !== id);
+    render();
+    toast(`"${name}" 삭제 완료`, 'info');
+  } catch (e) {
+    toast('삭제 실패: ' + e.message, 'err');
+  }
+}
+
+/* ════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════ */
+function toast(msg, type='info') {
+  const c = document.getElementById('toasts');
+  const d = document.createElement('div');
+  d.className = `toast ${type}`;
+  d.textContent = msg;
+  c.appendChild(d);
+  setTimeout(() => {
+    d.style.transition = 'opacity .3s'; d.style.opacity = '0';
+    setTimeout(() => d.remove(), 300);
+  }, 3200);
+}
+
+/* ════════════════════════════════════════════
+   UTIL
+════════════════════════════════════════════ */
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════ */
+async function loadStocks() {
+  document.getElementById('stocks-grid').innerHTML =
+    '<div class="loading"><div class="spinner"></div><p>불러오는 중…</p></div>';
+  st.stocks = await Store.getAll();
+  render();
+}
+
+function init() {
+  if (localStorage.getItem(LS_SETUP)) hideBanner();
+  const saved = localStorage.getItem(LS_URL);
+  if (saved) document.getElementById('api-url-input').value = saved;
+  updateBadge();
+  renderPills();
+  renderSectorOpts();
+  loadStocks();
+}
+
+init();
+</script>
+</body>
+</html>
+
