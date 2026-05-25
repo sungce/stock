@@ -6,6 +6,7 @@
   <title>주식노트 | StockNote</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
   <style>
     /* ── 디자인 토큰 (라이트 테마) ── */
     :root {
@@ -784,6 +785,73 @@
     .btn-add-link:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
 
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       분석·통계
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .stats-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px 22px;
+      box-shadow: var(--shadow-sm);
+    }
+    .section-title {
+      font-size: 12px; font-weight: 700;
+      color: var(--text3); letter-spacing: .6px;
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px; margin-bottom: 14px;
+    }
+    .chart-wrap { position: relative; }
+    .chart-empty {
+      display: flex; align-items: center; justify-content: center;
+      height: 100%; font-size: 12px; color: var(--text3);
+      text-align: center; padding: 20px; line-height: 1.7;
+    }
+
+    /* 종목별 현황 테이블 */
+    .h-table { width: 100%; border-collapse: collapse; }
+    .h-table th {
+      font-size: 11px; font-weight: 600; color: var(--text3);
+      padding: 8px 12px; text-align: left;
+      border-bottom: 2px solid var(--border); white-space: nowrap;
+    }
+    .h-table td {
+      padding: 11px 12px; font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .h-table tr:last-child td { border-bottom: none; }
+    .h-table tbody tr:hover td { background: var(--surface2); }
+    .h-num { font-family: 'JetBrains Mono', monospace; text-align: right; }
+    .pnl-pos { color: var(--green); font-weight: 700; }
+    .pnl-neg { color: var(--red);   font-weight: 700; }
+
+    /* 간단 지표 카드 (인사이트 행) */
+    .insight-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px; margin-bottom: 14px;
+    }
+    .insight-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+      display: flex; align-items: center; gap: 14px;
+    }
+    .insight-icon { font-size: 28px; flex-shrink: 0; }
+    .insight-label { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
+    .insight-val   { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 500; }
+
+    @media (max-width: 700px) {
+      .chart-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        반응형
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
     @media (max-width: 620px) {
@@ -817,7 +885,7 @@
       <div class="nav-tab active" data-page="watchlist">관심종목</div>
       <div class="nav-tab" data-page="journal">매매일지</div>
       <div class="nav-tab" data-page="notes">종목노트</div>
-      <div class="nav-tab soon" data-page="stats">분석·통계</div>
+      <div class="nav-tab" data-page="stats">분석·통계</div>
     </nav>
     <div class="header-end">
       <span id="mode-badge" class="mode-badge local">LOCAL</span>
@@ -955,12 +1023,121 @@
   </div>
 </div>
 
+<!-- ══ PAGE: 분석·통계 ══ -->
 <div id="page-stats" class="page">
-  <div class="soon-page">
-    <div class="soon-ico">📊</div>
-    <h2>분석·통계 — 4단계에서 추가됩니다</h2>
-    <p>섹터별 비중 차트, 누적 수익률, 승률 분석이 포함됩니다.</p>
+
+  <!-- 요약 통계 카드 -->
+  <div class="stats-row" style="margin-bottom:14px">
+    <div class="stat-card">
+      <div class="stat-label">관심 종목</div>
+      <div class="stat-val blue"  id="as-stocks">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">총 거래</div>
+      <div class="stat-val"       id="as-trades">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">실현 손익</div>
+      <div class="stat-val"       id="as-pnl">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">승률</div>
+      <div class="stat-val"       id="as-wr">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">작성 노트</div>
+      <div class="stat-val"       id="as-notes">-</div>
+    </div>
   </div>
+
+  <!-- 인사이트 카드 행 -->
+  <div class="insight-row" id="insight-row">
+    <div class="insight-card">
+      <div class="insight-icon">🏆</div>
+      <div>
+        <div class="insight-label">최고 수익 종목</div>
+        <div class="insight-val" id="ins-best">—</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">📉</div>
+      <div>
+        <div class="insight-label">최대 손실 종목</div>
+        <div class="insight-val" id="ins-worst">—</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">🎯</div>
+      <div>
+        <div class="insight-label">가장 많이 쓴 매매 이유</div>
+        <div class="insight-val" id="ins-reason">—</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">😊</div>
+      <div>
+        <div class="insight-label">수익률 높은 감정</div>
+        <div class="insight-val" id="ins-emotion">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 차트 2열: 섹터 비중 + 월별 손익 -->
+  <div class="chart-grid">
+    <div class="stats-section">
+      <div class="section-title">📊 섹터 비중 (관심종목 기준)</div>
+      <div class="chart-wrap" style="height:256px" id="wrap-sector">
+        <canvas id="chart-sector"></canvas>
+      </div>
+    </div>
+    <div class="stats-section">
+      <div class="section-title">📅 월별 실현 손익</div>
+      <div class="chart-wrap" style="height:256px" id="wrap-monthly">
+        <canvas id="chart-monthly"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 차트 2열: 매매 이유 + 감정별 손익 -->
+  <div class="chart-grid">
+    <div class="stats-section">
+      <div class="section-title">🎯 매매 이유별 거래 수</div>
+      <div class="chart-wrap" style="height:220px" id="wrap-reason">
+        <canvas id="chart-reason"></canvas>
+      </div>
+    </div>
+    <div class="stats-section">
+      <div class="section-title">😊 감정별 평균 손익 (매도 기준)</div>
+      <div class="chart-wrap" style="height:220px" id="wrap-emotion">
+        <canvas id="chart-emotion"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 종목별 매매 현황 테이블 -->
+  <div class="stats-section">
+    <div class="section-title">💼 종목별 매매 현황</div>
+    <div style="overflow-x:auto">
+      <table class="h-table">
+        <thead>
+          <tr>
+            <th>종목</th>
+            <th>섹터</th>
+            <th class="h-num">매수</th>
+            <th class="h-num">매수 총액</th>
+            <th class="h-num">평균 매수가</th>
+            <th class="h-num">매도</th>
+            <th class="h-num">실현 손익</th>
+            <th class="h-num">수익률</th>
+          </tr>
+        </thead>
+        <tbody id="holdings-body">
+          <tr><td colspan="8" style="text-align:center;color:var(--text3);padding:28px">거래 기록이 없습니다</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
 
 <!-- ══ 종목 추가/편집 모달 ══ -->
@@ -1329,6 +1506,7 @@ document.querySelectorAll('.nav-tab:not(.soon)').forEach(tab => {
     document.getElementById('page-' + page).classList.add('active');
     if (page === 'journal' && jt.trades.length === 0) loadTrades();
     if (page === 'notes'   && nt.notes.length  === 0) loadNotes();
+    if (page === 'stats') initStats();
   });
 });
 
@@ -2281,6 +2459,358 @@ async function delNote(id) {
   } catch (e) {
     toast('삭제 실패: ' + e.message, 'err');
   }
+}
+
+/* ════════════════════════════════════════════
+   분석·통계 — ANALYTICS
+════════════════════════════════════════════ */
+const chartInst = {};
+
+/* ── 초기화 (탭 클릭 시마다 재계산) ── */
+async function initStats() {
+  if (jt.trades.length === 0) await loadTrades();
+  if (nt.notes.length  === 0) await loadNotes();
+  setChartDefaults();
+  renderStatsSummary();
+  renderInsightCards();
+  renderSectorChart();
+  renderMonthlyChart();
+  renderReasonChart();
+  renderEmotionChart();
+  renderHoldingsTable();
+}
+
+function setChartDefaults() {
+  if (typeof Chart === 'undefined') return;
+  Chart.defaults.color         = '#6b7280';
+  Chart.defaults.borderColor   = '#e5e9f2';
+  Chart.defaults.font.family   = "'Noto Sans KR', sans-serif";
+  Chart.defaults.font.size     = 11;
+}
+
+/* ── 요약 통계 ── */
+function renderStatsSummary() {
+  const sells = jt.trades.filter(t => t.type === 'SELL' && t.avgBuyPrice && t.price);
+  let total = 0, wins = 0;
+  sells.forEach(t => {
+    const p = (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
+    total += p; if (p > 0) wins++;
+  });
+  const wr   = sells.length ? ((wins / sells.length) * 100).toFixed(0) + '%' : '—';
+  const sign = total >= 0 ? '+' : '';
+
+  document.getElementById('as-stocks').textContent = st.stocks.length;
+  document.getElementById('as-trades').textContent = jt.trades.length;
+  document.getElementById('as-notes').textContent  = nt.notes.length;
+  document.getElementById('as-wr').textContent     = wr;
+
+  const pnlEl = document.getElementById('as-pnl');
+  if (sells.length) {
+    pnlEl.textContent = sign + Math.round(total).toLocaleString() + '원';
+    pnlEl.className   = 'stat-val ' + (total > 0 ? 'green' : total < 0 ? 'red' : '');
+  } else {
+    pnlEl.textContent = '—';
+    pnlEl.className   = 'stat-val';
+  }
+}
+
+/* ── 인사이트 카드 ── */
+function renderInsightCards() {
+  // 종목별 손익 집계
+  const stockPnL = {};
+  jt.trades.filter(t => t.type === 'SELL' && t.avgBuyPrice && t.price).forEach(t => {
+    const p = (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
+    stockPnL[t.stockName] = (stockPnL[t.stockName] || 0) + p;
+  });
+  const entries = Object.entries(stockPnL);
+  if (entries.length) {
+    const best  = entries.reduce((a, b) => b[1] > a[1] ? b : a);
+    const worst = entries.reduce((a, b) => b[1] < a[1] ? b : a);
+    const bSign = best[1]  >= 0 ? '+' : '';
+    const wSign = worst[1] >= 0 ? '+' : '';
+    document.getElementById('ins-best').textContent =
+      `${best[0]} (${bSign}${Math.round(best[1]).toLocaleString()}원)`;
+    document.getElementById('ins-worst').textContent =
+      `${worst[0]} (${wSign}${Math.round(worst[1]).toLocaleString()}원)`;
+    document.getElementById('ins-best').style.color  = best[1]  > 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('ins-worst').style.color = worst[1] > 0 ? 'var(--green)' : 'var(--red)';
+  }
+
+  // 최다 매매 이유
+  const reasonCount = {};
+  jt.trades.filter(t => t.reason).forEach(t => {
+    reasonCount[t.reason] = (reasonCount[t.reason] || 0) + 1;
+  });
+  const topReason = Object.entries(reasonCount).sort((a,b) => b[1]-a[1])[0];
+  if (topReason) document.getElementById('ins-reason').textContent =
+    `${topReason[0]} (${topReason[1]}회)`;
+
+  // 감정별 평균 손익 — 최고
+  const emoData = {};
+  jt.trades.filter(t => t.emotion && t.type === 'SELL' && t.avgBuyPrice && t.price).forEach(t => {
+    if (!emoData[t.emotion]) emoData[t.emotion] = { sum: 0, cnt: 0 };
+    emoData[t.emotion].sum += (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
+    emoData[t.emotion].cnt++;
+  });
+  const emoEntries = Object.entries(emoData).map(([k,v]) => [k, v.sum/v.cnt]);
+  if (emoEntries.length) {
+    const topEmo = emoEntries.sort((a,b) => b[1]-a[1])[0];
+    const eSign  = topEmo[1] >= 0 ? '+' : '';
+    document.getElementById('ins-emotion').textContent =
+      `${topEmo[0]} (평균 ${eSign}${Math.round(topEmo[1]).toLocaleString()}원)`;
+    document.getElementById('ins-emotion').style.color =
+      topEmo[1] > 0 ? 'var(--green)' : 'var(--red)';
+  }
+}
+
+/* ── 차트 공통 헬퍼 ── */
+function makeChart(id, config) {
+  if (typeof Chart === 'undefined') {
+    showChartEmpty(id, 'Chart.js 로딩 중입니다. 잠시 후 다시 클릭해주세요.'); return;
+  }
+  if (chartInst[id]) { chartInst[id].destroy(); delete chartInst[id]; }
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  canvas.style.display = '';
+  // 빈 상태 메시지 제거
+  const wrap = canvas.parentElement;
+  wrap.querySelectorAll('.chart-empty').forEach(el => el.remove());
+  chartInst[id] = new Chart(canvas.getContext('2d'), config);
+}
+
+function showChartEmpty(canvasId, msg) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  canvas.style.display = 'none';
+  const wrap = canvas.parentElement;
+  wrap.querySelectorAll('.chart-empty').forEach(el => el.remove());
+  const p = document.createElement('div');
+  p.className = 'chart-empty';
+  p.textContent = msg;
+  wrap.appendChild(p);
+}
+
+/* ── 섹터 비중 도넛 ── */
+function renderSectorChart() {
+  const countMap = {};
+  st.stocks.forEach(s => {
+    const sec = s.sector || '기타';
+    countMap[sec] = (countMap[sec] || 0) + 1;
+  });
+  if (!Object.keys(countMap).length) {
+    showChartEmpty('chart-sector', '관심종목을 추가하면 섹터 비중이 표시됩니다'); return;
+  }
+  const labels = Object.keys(countMap);
+  const data   = labels.map(l => countMap[l]);
+  const colors = labels.map(l => (SC[l] || SC['기타'])[1]);
+  const bgs    = labels.map(l => (SC[l] || SC['기타'])[0]);
+
+  makeChart('chart-sector', {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data, backgroundColor: colors,
+        borderColor: '#fff', borderWidth: 3, hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { padding: 14, boxWidth: 12, font: { size: 11 }, usePointStyle: true }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed}종목 (${Math.round(ctx.parsed / st.stocks.length * 100)}%)`
+          }
+        }
+      },
+      cutout: '60%'
+    }
+  });
+}
+
+/* ── 월별 손익 막대 ── */
+function renderMonthlyChart() {
+  const pnlMap = {};
+  jt.trades
+    .filter(t => t.type === 'SELL' && t.avgBuyPrice && t.price && t.date)
+    .forEach(t => {
+      const m   = String(t.date).slice(0, 7);
+      const pnl = (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
+      pnlMap[m] = (pnlMap[m] || 0) + pnl;
+    });
+
+  if (!Object.keys(pnlMap).length) {
+    showChartEmpty('chart-monthly', '평균매수가가 입력된 매도 거래가 있으면 표시됩니다'); return;
+  }
+
+  const labels = Object.keys(pnlMap).sort();
+  const data   = labels.map(l => Math.round(pnlMap[l]));
+  const bgColors  = data.map(v => v >= 0 ? 'rgba(5,150,105,.7)'  : 'rgba(220,38,38,.7)');
+  const bdrColors = data.map(v => v >= 0 ? '#059669' : '#dc2626');
+
+  makeChart('chart-monthly', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: '실현 손익',
+        data, backgroundColor: bgColors,
+        borderColor: bdrColors, borderWidth: 1, borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y.toLocaleString() + '원' } }
+      },
+      scales: {
+        y: {
+          grid: { color: '#f0f4f8' },
+          ticks: {
+            callback: v => {
+              if (Math.abs(v) >= 1000000) return (v/1000000).toFixed(0) + 'M';
+              if (Math.abs(v) >= 10000)   return (v/10000).toFixed(0) + '만';
+              return v;
+            }
+          }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+/* ── 매매 이유별 거래 수 수평 막대 ── */
+function renderReasonChart() {
+  const cnt = {};
+  jt.trades.filter(t => t.reason).forEach(t => {
+    cnt[t.reason] = (cnt[t.reason] || 0) + 1;
+  });
+  if (!Object.keys(cnt).length) {
+    showChartEmpty('chart-reason', '매매 이유가 기록된 거래가 있으면 표시됩니다'); return;
+  }
+  const sorted = Object.entries(cnt).sort((a,b) => b[1] - a[1]);
+  makeChart('chart-reason', {
+    type: 'bar',
+    data: {
+      labels: sorted.map(([k]) => k),
+      datasets: [{
+        label: '거래 수',
+        data:  sorted.map(([,v]) => v),
+        backgroundColor: 'rgba(37,99,235,.65)',
+        borderColor: '#2563eb',
+        borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#f0f4f8' }, ticks: { stepSize: 1 } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+/* ── 감정별 평균 손익 ── */
+function renderEmotionChart() {
+  const emo = {};
+  jt.trades
+    .filter(t => t.emotion && t.type === 'SELL' && t.avgBuyPrice && t.price)
+    .forEach(t => {
+      if (!emo[t.emotion]) emo[t.emotion] = { sum: 0, cnt: 0 };
+      emo[t.emotion].sum += (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
+      emo[t.emotion].cnt++;
+    });
+
+  if (!Object.keys(emo).length) {
+    showChartEmpty('chart-emotion', '감정이 기록된 매도 거래가 있으면 표시됩니다'); return;
+  }
+
+  const entries = Object.entries(emo).map(([k, v]) => [k, Math.round(v.sum / v.cnt)]);
+  entries.sort((a, b) => b[1] - a[1]);
+
+  makeChart('chart-emotion', {
+    type: 'bar',
+    data: {
+      labels: entries.map(([k]) => k),
+      datasets: [{
+        label: '평균 손익',
+        data:  entries.map(([,v]) => v),
+        backgroundColor: entries.map(([,v]) => v >= 0 ? 'rgba(5,150,105,.65)' : 'rgba(220,38,38,.65)'),
+        borderRadius: 4, borderWidth: 0
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' 평균 ' + ctx.parsed.x.toLocaleString() + '원' } }
+      },
+      scales: {
+        x: {
+          grid: { color: '#f0f4f8' },
+          ticks: { callback: v => Math.abs(v) >= 10000 ? (v/10000).toFixed(0) + '만' : v }
+        },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+/* ── 종목별 매매 현황 테이블 ── */
+function renderHoldingsTable() {
+  const map = {};
+  jt.trades.forEach(t => {
+    const n = t.stockName; if (!n) return;
+    if (!map[n]) map[n] = { buys: 0, buyAmt: 0, buyQty: 0, sells: 0, pnl: 0, hasPnL: false };
+    if (t.type === 'BUY') {
+      map[n].buys++;
+      map[n].buyAmt += Number(t.price || 0) * Number(t.quantity || 0);
+      map[n].buyQty += Number(t.quantity || 0);
+    } else {
+      map[n].sells++;
+      const r = calcPnL(t);
+      if (r) { map[n].pnl += r.pnl; map[n].hasPnL = true; }
+    }
+  });
+
+  const tbody = document.getElementById('holdings-body');
+  const rows  = Object.entries(map);
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:28px">거래 기록이 없습니다</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.sort((a,b) => b[1].buyAmt - a[1].buyAmt).map(([name, d]) => {
+    const stock   = st.stocks.find(s => s.name === name) || {};
+    const [bg, fg]= SC[stock.sector || '기타'] || SC['기타'];
+    const avgP    = d.buyQty ? Math.round(d.buyAmt / d.buyQty) : 0;
+    const pnlPct  = d.hasPnL && d.buyAmt ? ((d.pnl / d.buyAmt) * 100).toFixed(1) : null;
+    const sign    = d.pnl >= 0 ? '+' : '';
+    const cls     = d.hasPnL ? (d.pnl > 0 ? 'pnl-pos' : 'pnl-neg') : '';
+    return `<tr>
+      <td><strong>${esc(name)}</strong></td>
+      <td>
+        <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;
+          background:${bg};color:${fg}">${esc(stock.sector || '기타')}</span>
+      </td>
+      <td class="h-num">${d.buys}회</td>
+      <td class="h-num">₩${d.buyAmt.toLocaleString()}</td>
+      <td class="h-num">₩${avgP.toLocaleString()}</td>
+      <td class="h-num">${d.sells}회</td>
+      <td class="h-num ${cls}">${d.hasPnL ? sign + Math.round(d.pnl).toLocaleString() + '원' : '—'}</td>
+      <td class="h-num ${cls}">${pnlPct !== null ? sign + pnlPct + '%' : '—'}</td>
+    </tr>`;
+  }).join('');
 }
 
 /* ════════════════════════════════════════════
