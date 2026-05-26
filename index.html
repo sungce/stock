@@ -1414,34 +1414,43 @@
 
 <!-- ══ 섹터 관리 모달 ══ -->
 <div id="modal-sector" class="overlay" onclick="overlaySectorClick(event)">
-  <div class="modal-box" style="max-width:440px">
+  <div class="modal-box" style="max-width:460px">
     <div class="m-head">
       <span class="m-title">⚙ 섹터 관리</span>
       <button class="m-close" onclick="closeSectorModal()">✕</button>
     </div>
     <div class="m-body">
-      <p style="font-size:12px;color:var(--text3);margin-bottom:14px;">
-        섹터 목록을 추가·수정·삭제할 수 있습니다. 삭제 시 해당 섹터의 종목은 <strong style="color:var(--amber)">기타</strong>로 변경됩니다.
+      <p style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.7;">
+        섹터를 추가·수정·삭제할 수 있습니다.<br>
+        변경사항은 <strong style="color:var(--blue)">즉시 자동 저장</strong>됩니다. 삭제 시 해당 섹터 종목은 <strong style="color:var(--amber)">기타</strong>로 변경됩니다.
       </p>
-      <!-- 섹터 목록 -->
-      <div class="sector-list" id="sector-list-wrap"></div>
 
       <!-- 새 섹터 추가 -->
-      <div class="sector-add-row">
-        <input id="new-sector-name" class="fi" type="text" placeholder="새 섹터명 입력" maxlength="10"
-          onkeydown="if(event.key==='Enter') addSector()">
-        <button class="btn-se ok" onclick="addSector()" style="padding:6px 14px;font-size:12px;">＋ 추가</button>
-      </div>
-
-      <!-- 색상 팔레트 -->
-      <div style="margin-top:12px;">
-        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;">새 섹터 색상 선택</div>
+      <div style="background:var(--blue-dim);border:1px solid var(--blue-soft);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px;letter-spacing:.3px;">＋ 새 섹터 추가</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+          <input id="new-sector-name" class="fi" type="text"
+            placeholder="섹터명 입력 (최대 10자)" maxlength="10"
+            style="flex:1;padding:8px 10px;font-size:13px;background:#fff;"
+            onkeydown="if(event.key==='Enter') addSector()">
+          <button onclick="addSector()"
+            style="background:var(--blue);color:#fff;border:none;padding:8px 18px;
+                   border-radius:var(--r-sm);font-size:13px;font-weight:700;
+                   cursor:pointer;font-family:inherit;white-space:nowrap;
+                   box-shadow:0 2px 8px rgba(37,99,235,.3);transition:all .15s;"
+            onmouseover="this.style.background='#1d4ed8'"
+            onmouseout="this.style.background='var(--blue)'">＋ 추가</button>
+        </div>
+        <div style="font-size:11px;font-weight:600;color:var(--blue);margin-bottom:6px;">색상 선택</div>
         <div class="color-palette" id="color-palette"></div>
       </div>
+
+      <!-- 섹터 목록 -->
+      <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.4px;margin-bottom:8px;">현재 섹터 목록</div>
+      <div class="sector-list" id="sector-list-wrap"></div>
     </div>
     <div class="m-foot">
-      <button class="btn-cancel" onclick="closeSectorModal()">닫기</button>
-      <button class="btn-save" onclick="saveSectors()">저장</button>
+      <button class="btn-save" onclick="closeSectorModal()" style="background:var(--blue);">✓ 닫기</button>
     </div>
   </div>
 </div>
@@ -1552,7 +1561,6 @@
 <script>
 'use strict';
 
-/* ── 섹터 정의 ── */
 /* ── 섹터 정의 (동적 관리) ── */
 const DEFAULT_SECTORS = ['AI인프라','반도체','로보틱스','전력기기','2차전지','바이오','방산','금융','기타'];
 const LS_SECTORS = 'sn_sectors';
@@ -1567,7 +1575,8 @@ function setSectorsStorage(arr) {
   localStorage.setItem(LS_SECTORS, JSON.stringify(arr));
 }
 
-let SECTORS = getSectors();
+// ⚠ SECTORS는 SC·loadSCStorage() 이후에 실제로 값이 채워집니다 (아래 참조)
+let SECTORS = [];
 
 /* ════════════════════════════════════════════
    국내 주요 종목 DB (종목명 → [코드, 시장])
@@ -1716,6 +1725,9 @@ function saveSCStorage() {
   localStorage.setItem(LS_SC, JSON.stringify(SC));
 }
 loadSCStorage();
+
+// SC 로드 완료 후 SECTORS 초기화 — 이제 SC[섹터명] 참조 가능
+SECTORS = getSectors();
 
 const LS_URL   = 'sn_api_url';
 const LS_DATA  = 'sn_stocks';
@@ -3280,13 +3292,14 @@ async function loadStocks() {
 /* ════════════════════════════════════════════
    섹터 관리 모달
 ════════════════════════════════════════════ */
-let sectorEditing = null; // 현재 편집 중인 섹터명
+let sectorEditing = null;
 
 function openSectorModal() {
   selectedPaletteIdx = 0;
+  sectorEditing = null;
+  document.getElementById('new-sector-name').value = '';
   renderSectorModalList();
   renderColorPalette();
-  document.getElementById('new-sector-name').value = '';
   document.getElementById('modal-sector').classList.add('open');
 }
 
@@ -3302,27 +3315,36 @@ function overlaySectorClick(e) {
 function renderSectorModalList() {
   const wrap = document.getElementById('sector-list-wrap');
   if (!wrap) return;
+
+  if (!SECTORS.length) {
+    wrap.innerHTML = '<p style="font-size:12px;color:var(--text3);text-align:center;padding:12px 0;">등록된 섹터가 없습니다.</p>';
+    return;
+  }
+
   wrap.innerHTML = SECTORS.map((s, i) => {
-    const [bg, fg] = SC[s] || SC['기타'];
-    const count = st.stocks.filter(st2 => (st2.sector || '기타') === s).length;
-    const isLocked = s === '기타'; // 기타는 삭제 불가
+    // SC가 없는 섹터는 기타 색상으로 fallback
+    const colors = SC[s] || SC['기타'] || ['#f9fafb','#374151'];
+    const [bg, fg] = colors;
+    const count    = st.stocks.filter(s2 => (s2.sector || '기타') === s).length;
+    const isLocked = (s === '기타');
 
     if (sectorEditing === s) {
-      return `<div class="sector-row" id="sector-row-${i}">
+      return `<div class="sector-row">
         <span class="sector-color-dot" style="background:${fg}"></span>
-        <input class="sector-edit-input" id="sector-edit-inp-${i}" value="${esc(s)}"
+        <input class="sector-edit-input" id="sector-edit-inp-${i}"
+          value="${esc(s)}"
           onkeydown="if(event.key==='Enter')confirmEditSector(${i});if(event.key==='Escape')cancelEditSector()">
-        <button class="btn-se ok" onclick="confirmEditSector(${i})">✓</button>
+        <button class="btn-se ok"     onclick="confirmEditSector(${i})">✓</button>
         <button class="btn-se cancel" onclick="cancelEditSector()">✕</button>
       </div>`;
     }
 
-    return `<div class="sector-row" id="sector-row-${i}">
+    return `<div class="sector-row">
       <span class="sector-color-dot" style="background:${fg}"></span>
       <span class="sector-name-display">${esc(s)}</span>
       <span class="sector-count-badge">${count}개</span>
-      <button class="btn-se edit" onclick="startEditSector('${esc(s)}')">✏</button>
-      ${isLocked ? '' : `<button class="btn-se del" onclick="deleteSector('${esc(s)}')">✕</button>`}
+      <button class="btn-se edit" onclick="startEditSector(${i})">✏</button>
+      ${isLocked ? '<span style="width:30px;flex-shrink:0"></span>' : `<button class="btn-se del" onclick="deleteSector(${i})">✕</button>`}
     </div>`;
   }).join('');
 }
@@ -3332,7 +3354,7 @@ function renderColorPalette() {
   if (!wrap) return;
   wrap.innerHTML = SECTOR_PALETTE.map(([bg, fg], i) =>
     `<span class="color-chip ${i === selectedPaletteIdx ? 'active' : ''}"
-      style="background:${fg};border-color:${i===selectedPaletteIdx?'#111':'transparent'}"
+      style="background:${fg};border-color:${i === selectedPaletteIdx ? '#111827' : 'transparent'}"
       onclick="selectPalette(${i})" title="${fg}"></span>`
   ).join('');
 }
@@ -3342,11 +3364,9 @@ function selectPalette(i) {
   renderColorPalette();
 }
 
-function startEditSector(name) {
-  sectorEditing = name;
+function startEditSector(idx) {
+  sectorEditing = SECTORS[idx];
   renderSectorModalList();
-  // 포커스
-  const idx = SECTORS.indexOf(name);
   const inp = document.getElementById(`sector-edit-inp-${idx}`);
   if (inp) { inp.focus(); inp.select(); }
 }
@@ -3362,40 +3382,50 @@ function confirmEditSector(idx) {
   const newName = inp.value.trim();
   const oldName = SECTORS[idx];
 
-  if (!newName) { toast('섹터명을 입력해주세요', 'err'); return; }
-  if (newName !== oldName && SECTORS.includes(newName)) {
-    toast('이미 존재하는 섹터입니다', 'err'); return;
-  }
+  if (!newName)                                              { toast('섹터명을 입력해주세요', 'err'); return; }
+  if (newName !== oldName && SECTORS.includes(newName))      { toast('이미 존재하는 섹터입니다', 'err'); return; }
+  if (newName.length > 10)                                   { toast('섹터명은 10자 이내로 입력해주세요', 'err'); return; }
 
   if (newName !== oldName) {
     // SC 컬러 이전
-    SC[newName] = SC[oldName] || SC['기타'];
+    SC[newName] = SC[oldName] || SC['기타'] || ['#f9fafb','#374151'];
     if (oldName !== '기타') delete SC[oldName];
-    // 종목 섹터 일괄 변경
+
+    // 종목 섹터 일괄 변경 (메모리)
     st.stocks.forEach(s => { if (s.sector === oldName) s.sector = newName; });
-    // 로컬스토리지 종목 업데이트
+
+    // localStorage 종목 업데이트
     try {
       const list = JSON.parse(localStorage.getItem(LS_DATA) || '[]');
       list.forEach(s => { if (s.sector === oldName) s.sector = newName; });
       localStorage.setItem(LS_DATA, JSON.stringify(list));
     } catch {}
+
     SECTORS[idx] = newName;
   }
 
   sectorEditing = null;
+  // 즉시 저장
+  setSectorsStorage(SECTORS);
+  saveSCStorage();
   renderSectorModalList();
-  toast(`"${oldName}" → "${newName}" 수정됨`, 'ok');
+  renderPills();
+  renderSectorOpts();
+  render();
+  toast(`"${oldName}" → "${newName}" 수정 완료`, 'ok');
 }
 
-function deleteSector(name) {
+function deleteSector(idx) {
+  const name = SECTORS[idx];
   if (name === '기타') { toast('"기타" 섹터는 삭제할 수 없습니다', 'err'); return; }
+
   const count = st.stocks.filter(s => (s.sector || '기타') === name).length;
-  const msg = count > 0
-    ? `"${name}" 섹터를 삭제하면 ${count}개 종목이 "기타"로 변경됩니다. 계속하시겠습니까?`
+  const msg   = count > 0
+    ? `"${name}" 섹터를 삭제하면 ${count}개 종목이 "기타"로 변경됩니다.\n계속하시겠습니까?`
     : `"${name}" 섹터를 삭제하시겠습니까?`;
   if (!confirm(msg)) return;
 
-  // 종목 섹터를 기타로
+  // 종목 일괄 변경
   st.stocks.forEach(s => { if (s.sector === name) s.sector = '기타'; });
   try {
     const list = JSON.parse(localStorage.getItem(LS_DATA) || '[]');
@@ -3403,35 +3433,48 @@ function deleteSector(name) {
     localStorage.setItem(LS_DATA, JSON.stringify(list));
   } catch {}
 
-  SECTORS.splice(SECTORS.indexOf(name), 1);
+  SECTORS.splice(idx, 1);
   delete SC[name];
 
+  // 즉시 저장
+  setSectorsStorage(SECTORS);
+  saveSCStorage();
   renderSectorModalList();
-  // 필터 pills / 모달 셀렉트 동기화
   renderPills();
   renderSectorOpts();
-  toast(`"${name}" 섹터 삭제됨`, 'info');
+  render();
+  toast(`"${name}" 섹터가 삭제되었습니다`, 'info');
 }
 
 function addSector() {
-  const inp = document.getElementById('new-sector-name');
+  const inp  = document.getElementById('new-sector-name');
   const name = inp.value.trim();
-  if (!name) { toast('섹터명을 입력해주세요', 'err'); return; }
-  if (SECTORS.includes(name)) { toast('이미 존재하는 섹터입니다', 'err'); return; }
-  if (name.length > 10) { toast('섹터명은 10자 이내로 입력해주세요', 'err'); return; }
 
-  const [bg, fg] = SECTOR_PALETTE[selectedPaletteIdx];
+  if (!name)                  { toast('섹터명을 입력해주세요', 'err'); return; }
+  if (name.length > 10)       { toast('섹터명은 10자 이내로 입력해주세요', 'err'); return; }
+  if (SECTORS.includes(name)) { toast('이미 존재하는 섹터입니다', 'err'); return; }
+
+  // 색상 적용
+  const palette = SECTOR_PALETTE[selectedPaletteIdx] || SECTOR_PALETTE[0];
+  const [bg, fg] = palette;
   SC[name] = [bg, fg];
 
-  // 기타 앞에 삽입
+  // "기타" 앞에 삽입
   const gIdx = SECTORS.indexOf('기타');
   if (gIdx >= 0) SECTORS.splice(gIdx, 0, name);
-  else SECTORS.push(name);
+  else           SECTORS.push(name);
 
+  // 즉시 저장
+  setSectorsStorage(SECTORS);
+  saveSCStorage();
+
+  // UI 갱신
   inp.value = '';
   renderSectorModalList();
-  renderColorPalette();
-  toast(`"${name}" 섹터 추가됨`, 'ok');
+  renderPills();
+  renderSectorOpts();
+  render();
+  toast(`"${name}" 섹터가 추가되었습니다`, 'ok');
 }
 
 function saveSectors() {
