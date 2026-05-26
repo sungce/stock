@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>주식노트 | StockNote</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -631,6 +631,43 @@
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        반응형
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    
+    /* ━━━━━━ 섹터 관리 CSS ━━━━━━ */
+    .btn-manage-sector { background: none; border: 1px dashed var(--border2); color: var(--text3); font-size: 11px; font-weight: 600; padding: 5px 11px; border-radius: 100px; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
+    .btn-manage-sector:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+    .sector-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .sector-row { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 12px; transition: background .12s; }
+    .sector-row:hover { background: var(--blue-dim); border-color: var(--blue-soft); }
+    .sector-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .sector-name-display { flex: 1; font-size: 13px; font-weight: 600; color: var(--text); }
+    .sector-count-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 100px; background: var(--surface); color: var(--text3); border: 1px solid var(--border2); min-width: 28px; text-align: center; }
+    .sector-edit-input { flex: 1; background: #fff; border: 1px solid var(--blue); color: var(--text); padding: 4px 8px; border-radius: 6px; font-size: 13px; font-weight: 600; font-family: inherit; outline: none; }
+    .btn-se { background: none; border: 1px solid var(--border2); color: var(--text3); font-size: 11px; padding: 4px 9px; border-radius: 6px; cursor: pointer; font-family: inherit; transition: all .13s; font-weight: 500; flex-shrink: 0; }
+    .btn-se.edit:hover  { background: var(--blue-dim); color: var(--blue); border-color: var(--blue-soft); }
+    .btn-se.del:hover   { background: var(--red-dim);  color: var(--red);  border-color: #fecaca; }
+    .btn-se.ok:hover    { background: var(--green-dim);color: var(--green);border-color: var(--green-soft); }
+    .btn-se.cancel:hover{ background: var(--border);   color: var(--text2); }
+    .color-palette { display: flex; gap: 5px; flex-wrap: wrap; margin: 4px 0 10px; }
+    .color-chip { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform .12s, border-color .12s; flex-shrink: 0; }
+    .color-chip:hover { transform: scale(1.15); }
+    .color-chip.active { border-color: #111827; transform: scale(1.1); }
+    
+    /* ━━━━━━ 계좌별 손익 & 현재가 CSS ━━━━━━ */
+    .acct-pnl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .acct-pnl-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
+    .acct-pnl-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--purple); }
+    .acct-pnl-label { font-size: 11px; color: var(--text3); font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+    .acct-pnl-val { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; }
+    .acct-pnl-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+    .curprice-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 18px 20px; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
+    .curprice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 12px; }
+    .curprice-row { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 7px 10px; }
+    .curprice-name { flex: 1; font-size: 12px; font-weight: 600; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .curprice-input { width: 90px; background: #fff; border: 1px solid var(--border2); color: var(--text); padding: 4px 7px; border-radius: 6px; font-size: 12px; font-family: 'JetBrains Mono', monospace; outline: none; transition: border-color .15s; text-align: right; }
+    .curprice-input:focus { border-color: var(--blue); }
+    .btn-refresh-price { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue-soft); padding: 5px 14px; border-radius: var(--r-sm); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+    .btn-refresh-price:hover { background: var(--blue); color: #fff; }
+    .eval-pos { color: var(--green); } .eval-neg { color: var(--red); }
     @media (max-width: 620px) {
       .form-grid { grid-template-columns: 1fr; }
       .stats-row { grid-template-columns: repeat(2,1fr); }
@@ -753,7 +790,7 @@
       <div class="nav-tab active" data-page="watchlist">관심종목</div>
       <div class="nav-tab" data-page="journal">매매일지</div>
       <div class="nav-tab soon" data-page="notes">종목노트</div>
-      <div class="nav-tab soon" data-page="stats">분석·통계</div>
+      <div class="nav-tab" data-page="stats">분석·통계</div>
     </nav>
     <div class="header-end">
       <span id="mode-badge" class="mode-badge local">LOCAL</span>
@@ -877,11 +914,147 @@
 </div>
 
 <div id="page-stats" class="page">
-  <div class="soon-page">
-    <div class="soon-ico">📊</div>
-    <h2>분석·통계 — 4단계에서 추가됩니다</h2>
-    <p>섹터별 비중 차트, 누적 수익률, 승률 분석이 포함됩니다.</p>
+
+  <!-- 요약 통계 카드 -->
+  <div class="stats-row" style="margin-bottom:14px">
+    <div class="stat-card">
+      <div class="stat-label">관심 종목</div>
+      <div class="stat-val blue"  id="as-stocks">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">총 거래</div>
+      <div class="stat-val"       id="as-trades">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">실현 손익</div>
+      <div class="stat-val"       id="as-pnl">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">평가 손익 (현재가)</div>
+      <div class="stat-val"       id="as-eval-pnl">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">승률</div>
+      <div class="stat-val"       id="as-wr">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">작성 노트</div>
+      <div class="stat-val"       id="as-notes">-</div>
+    </div>
   </div>
+
+  <!-- 계좌별 실현 손익 카드 -->
+  <div class="stats-section" style="margin-bottom:20px">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>🏦 계좌별 실현 손익</span>
+    </div>
+    <div class="acct-pnl-grid" id="acct-pnl-grid" style="margin-top:14px">
+      <div style="color:var(--text3);font-size:12px;padding:8px 0;">계좌를 등록하면 계좌별 손익이 표시됩니다.</div>
+    </div>
+  </div>
+
+  <!-- 현재가 입력 섹션 -->
+  <div class="curprice-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div class="section-title">📡 현재가 입력 <span style="font-size:10px;font-weight:400;color:var(--text3);margin-left:6px;">— 보유 종목의 현재 시세를 입력하면 평가 손익이 계산됩니다</span></div>
+      <button class="btn-refresh-price" onclick="applyCurrentPrices()">✓ 적용하여 재계산</button>
+    </div>
+    <div class="curprice-grid" id="curprice-grid">
+      <div style="color:var(--text3);font-size:12px;padding:8px 0;">보유 중인 종목이 없습니다.</div>
+    </div>
+  </div>
+
+  <!-- 인사이트 카드 행 -->
+  <div class="insight-row" id="insight-row">
+    <div class="insight-card">
+      <div class="insight-icon">🏆</div>
+      <div>
+        <div class="insight-label">최고 수익 종목</div>
+        <div class="insight-val" id="ins-best">—</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">📉</div>
+      <div>
+        <div class="insight-label">최대 손실 종목</div>
+        <div class="insight-val" id="ins-worst">—</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">🎯</div>
+      <div>
+        <div class="insight-label">가장 많이 쓴 매매 이유</div>
+        <div class="insight-val" id="ins-reason">—</div>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-icon">😊</div>
+      <div>
+        <div class="insight-label">수익률 높은 감정</div>
+        <div class="insight-val" id="ins-emotion">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 차트 2열: 섹터 비중 + 월별 손익 -->
+  <div class="chart-grid">
+    <div class="stats-section">
+      <div class="section-title">📊 섹터 비중 (관심종목 기준)</div>
+      <div class="chart-wrap" style="height:256px" id="wrap-sector">
+        <canvas id="chart-sector"></canvas>
+      </div>
+    </div>
+    <div class="stats-section">
+      <div class="section-title">📅 월별 실현 손익</div>
+      <div class="chart-wrap" style="height:256px" id="wrap-monthly">
+        <canvas id="chart-monthly"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 차트 2열: 매매 이유 + 감정별 손익 -->
+  <div class="chart-grid">
+    <div class="stats-section">
+      <div class="section-title">🎯 매매 이유별 거래 수</div>
+      <div class="chart-wrap" style="height:220px" id="wrap-reason">
+        <canvas id="chart-reason"></canvas>
+      </div>
+    </div>
+    <div class="stats-section">
+      <div class="section-title">😊 감정별 평균 손익 (매도 기준)</div>
+      <div class="chart-wrap" style="height:220px" id="wrap-emotion">
+        <canvas id="chart-emotion"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 종목별 매매 현황 테이블 -->
+  <div class="stats-section">
+    <div class="section-title">💼 종목별 매매 현황 (현재가 반영)</div>
+    <div style="overflow-x:auto">
+      <table class="h-table">
+        <thead>
+          <tr>
+            <th>종목</th>
+            <th>섹터</th>
+            <th>계좌</th>
+            <th class="h-num">매수</th>
+            <th class="h-num">매수 총액</th>
+            <th class="h-num">평균 매수가</th>
+            <th class="h-num">현재가</th>
+            <th class="h-num">매도</th>
+            <th class="h-num">실현 손익</th>
+            <th class="h-num">평가 손익</th>
+            <th class="h-num">수익률</th>
+          </tr>
+        </thead>
+        <tbody id="holdings-body">
+          <tr><td colspan="11" style="text-align:center;color:var(--text3);padding:28px">거래 기록이 없습니다</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
 
 <!-- ══ 종목 추가/편집 모달 ══ -->
@@ -1090,8 +1263,9 @@
 'use strict';
 
 /* ── 섹터 정의 ── */
-const SECTORS = ['AI인프라','반도체','로보틱스','전력기기','2차전지','바이오','방산','금융','기타'];
-const SC = {   // 섹터 컬러 맵 (라이트 테마)
+// SECTORS: SC 로드 후 동적 초기화
+let SECTORS = [];
+let SC = {   // 섹터 컬러 맵 (라이트 테마)
   'AI인프라':  ['#eff6ff','#1d4ed8'],
   '반도체':    ['#f5f3ff','#5b21b6'],
   '로보틱스':  ['#ecfdf5','#065f46'],
@@ -1102,6 +1276,94 @@ const SC = {   // 섹터 컬러 맵 (라이트 테마)
   '금융':      ['#eef2ff','#3730a3'],
   '기타':      ['#f9fafb','#374151'],
 };
+
+/* ════════════════════════════════════════════
+   섹터 관리 — SECTOR MANAGEMENT
+════════════════════════════════════════════ */
+const DEFAULT_SECTORS = ['AI인프라','반도체','로보틱스','전력기기','2차전지','바이오','방산','금융','기타'];
+const LS_SECTORS = 'sn_sectors';
+function getSectors() { try { const s = localStorage.getItem(LS_SECTORS); return s ? JSON.parse(s) : [...DEFAULT_SECTORS]; } catch { return [...DEFAULT_SECTORS]; } }
+function setSectorsStorage(arr) { localStorage.setItem(LS_SECTORS, JSON.stringify(arr)); }
+const SECTOR_PALETTE = [
+  ['#eff6ff','#1d4ed8'],['#f5f3ff','#5b21b6'],['#ecfdf5','#065f46'],
+  ['#fffbeb','#92400e'],['#fef2f2','#991b1b'],['#f0fdf4','#14532d'],
+  ['#fff7ed','#9a3412'],['#eef2ff','#3730a3'],['#fdf4ff','#7e22ce'],
+  ['#fef9c3','#713f12'],['#e0f2fe','#0c4a6e'],['#fee2e2','#7f1d1d'],
+  ['#d1fae5','#064e3b'],['#fce7f3','#9d174d'],['#e0e7ff','#312e81'],
+  ['#f1f5f9','#334155'],['#fafafa','#525252'],['#fff1f2','#881337'],
+];
+let selectedPaletteIdx = 0; let sectorEditing = null;
+const LS_SC = 'sn_sc';
+function loadSCStorage() { try { const s = localStorage.getItem(LS_SC); if (s) Object.assign(SC, JSON.parse(s)); } catch {} }
+function saveSCStorage() { localStorage.setItem(LS_SC, JSON.stringify(SC)); }
+
+function openSectorModal() { selectedPaletteIdx=0; sectorEditing=null; document.getElementById('new-sector-name').value=''; renderSectorModalList(); renderColorPalette(); document.getElementById('modal-sector').classList.add('open'); }
+function closeSectorModal() { document.getElementById('modal-sector').classList.remove('open'); sectorEditing=null; }
+function overlaySectorClick(e) { if (e.target.id==='modal-sector') closeSectorModal(); }
+function renderSectorModalList() {
+  const wrap = document.getElementById('sector-list-wrap'); if (!wrap) return;
+  if (!SECTORS.length) { wrap.innerHTML='<p style="font-size:12px;color:var(--text3);text-align:center;padding:12px 0;">등록된 섹터가 없습니다.</p>'; return; }
+  wrap.innerHTML = SECTORS.map((s,i) => {
+    const [bg,fg] = SC[s] || SC['기타'] || ['#f9fafb','#374151'];
+    const count = st.stocks.filter(s2 => (s2.sector||'기타')===s).length;
+    const isLocked = s==='기타';
+    if (sectorEditing===s) return `<div class="sector-row"><span class="sector-color-dot" style="background:${fg}"></span><input class="sector-edit-input" id="sector-edit-inp-${i}" value="${esc(s)}" onkeydown="if(event.key==='Enter')confirmEditSector(${i});if(event.key==='Escape')cancelEditSector()"><button class="btn-se ok" onclick="confirmEditSector(${i})">✓</button><button class="btn-se cancel" onclick="cancelEditSector()">✕</button></div>`;
+    return `<div class="sector-row"><span class="sector-color-dot" style="background:${fg}"></span><span class="sector-name-display">${esc(s)}</span><span class="sector-count-badge">${count}개</span><button class="btn-se edit" onclick="startEditSector(${i})">✏</button>${isLocked?'<span style="width:30px;flex-shrink:0"></span>':`<button class="btn-se del" onclick="deleteSector(${i})">✕</button>`}</div>`;
+  }).join('');
+}
+function renderColorPalette() {
+  const wrap = document.getElementById('color-palette'); if (!wrap) return;
+  wrap.innerHTML = SECTOR_PALETTE.map(([bg,fg],i) => `<span class="color-chip ${i===selectedPaletteIdx?'active':''}" style="background:${fg};border-color:${i===selectedPaletteIdx?'#111827':'transparent'}" onclick="selectPalette(${i})" title="${fg}"></span>`).join('');
+}
+function selectPalette(i) { selectedPaletteIdx=i; renderColorPalette(); }
+function startEditSector(idx) { sectorEditing=SECTORS[idx]; renderSectorModalList(); const inp=document.getElementById(`sector-edit-inp-${idx}`); if(inp){inp.focus();inp.select();} }
+function cancelEditSector() { sectorEditing=null; renderSectorModalList(); }
+function confirmEditSector(idx) {
+  const inp=document.getElementById(`sector-edit-inp-${idx}`); if(!inp) return;
+  const newName=inp.value.trim(); const oldName=SECTORS[idx];
+  if(!newName){toast('섹터명을 입력해주세요','err');return;}
+  if(newName!==oldName&&SECTORS.includes(newName)){toast('이미 존재하는 섹터입니다','err');return;}
+  if(newName.length>10){toast('섹터명은 10자 이내로 입력해주세요','err');return;}
+  if(newName!==oldName){
+    SC[newName]=SC[oldName]||SC['기타']||['#f9fafb','#374151'];
+    if(oldName!=='기타') delete SC[oldName];
+    st.stocks.forEach(s=>{if(s.sector===oldName)s.sector=newName;});
+    try{const list=JSON.parse(localStorage.getItem(LS_DATA)||'[]');list.forEach(s=>{if(s.sector===oldName)s.sector=newName;});localStorage.setItem(LS_DATA,JSON.stringify(list));}catch{}
+    SECTORS[idx]=newName;
+  }
+  sectorEditing=null; setSectorsStorage(SECTORS); saveSCStorage();
+  renderSectorModalList(); renderPills(); renderSectorOpts(); render();
+  toast(`"${oldName}" → "${newName}" 수정 완료`,'ok');
+}
+function deleteSector(idx) {
+  const name=SECTORS[idx];
+  if(name==='기타'){toast('"기타" 섹터는 삭제할 수 없습니다','err');return;}
+  const count=st.stocks.filter(s=>(s.sector||'기타')===name).length;
+  if(!confirm(count>0?`"${name}" 섹터를 삭제하면 ${count}개 종목이 "기타"로 변경됩니다.\n계속하시겠습니까?`:`"${name}" 섹터를 삭제하시겠습니까?`)) return;
+  st.stocks.forEach(s=>{if(s.sector===name)s.sector='기타';});
+  try{const list=JSON.parse(localStorage.getItem(LS_DATA)||'[]');list.forEach(s=>{if(s.sector===name)s.sector='기타';});localStorage.setItem(LS_DATA,JSON.stringify(list));}catch{}
+  SECTORS.splice(idx,1); delete SC[name];
+  setSectorsStorage(SECTORS); saveSCStorage();
+  renderSectorModalList(); renderPills(); renderSectorOpts(); render();
+  toast(`"${name}" 섹터가 삭제되었습니다`,'info');
+}
+function addSector() {
+  const inp=document.getElementById('new-sector-name'); const name=inp.value.trim();
+  if(!name){toast('섹터명을 입력해주세요','err');return;}
+  if(name.length>10){toast('섹터명은 10자 이내로 입력해주세요','err');return;}
+  if(SECTORS.includes(name)){toast('이미 존재하는 섹터입니다','err');return;}
+  const [bg,fg]=SECTOR_PALETTE[selectedPaletteIdx]||SECTOR_PALETTE[0];
+  SC[name]=[bg,fg];
+  const gIdx=SECTORS.indexOf('기타');
+  if(gIdx>=0) SECTORS.splice(gIdx,0,name); else SECTORS.push(name);
+  setSectorsStorage(SECTORS); saveSCStorage();
+  inp.value=''; renderSectorModalList(); renderColorPalette(); renderPills(); renderSectorOpts(); render();
+  toast(`"${name}" 섹터가 추가되었습니다`,'ok');
+}
+
+loadSCStorage();
+SECTORS = getSectors();
+
 
 const LS_URL   = 'sn_api_url';
 const LS_DATA  = 'sn_stocks';
@@ -1236,6 +1498,8 @@ document.querySelectorAll('.nav-tab:not(.soon)').forEach(tab => {
     const page = tab.dataset.page;
     document.getElementById('page-' + page).classList.add('active');
     if (page === 'journal' && jt.trades.length === 0) loadTrades();
+    if (page === 'notes'   && nt.notes.length  === 0) loadNotes();
+    if (page === 'stats') initStats();
   });
 });
 
@@ -2051,6 +2315,555 @@ async function delTrade(id) {
 /* ════════════════════════════════════════════
    INIT
 ════════════════════════════════════════════ */
+/* ════════════════════════════════════════════
+   계좌 & 현재가 (stats 페이지용)
+════════════════════════════════════════════ */
+const LS_CUR_PRICES = 'sn_cur_prices';
+
+// 현재가 저장소 { stockName: price }
+let curPrices = (() => {
+  try { return JSON.parse(localStorage.getItem(LS_CUR_PRICES) || '{}'); }
+  catch { return {}; }
+})();
+
+function saveCurPrices() {
+  localStorage.setItem(LS_CUR_PRICES, JSON.stringify(curPrices));
+}
+
+/* ── 보유 종목 계산 (매수 - 매도 잔량) ── */
+function calcHoldings() {
+  // { stockName: { qty, avgBuy, accts:{acctName:qty} } }
+  const hold = {};
+  jt.trades
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+    .forEach(t => {
+      const n = t.stockName; if (!n) return;
+      if (!hold[n]) hold[n] = { qty: 0, buyAmt: 0, accts: {} };
+      const qty = Number(t.quantity || 0);
+      const price = Number(t.price || 0);
+      if (t.type === 'BUY') {
+        hold[n].qty    += qty;
+        hold[n].buyAmt += qty * price;
+        const acct = t.acctName || '미지정';
+        hold[n].accts[acct] = (hold[n].accts[acct] || 0) + qty;
+      } else {
+        hold[n].qty    -= qty;
+        if (hold[n].qty < 0) hold[n].qty = 0;
+      }
+    });
+  // avgBuy
+  Object.values(hold).forEach(h => {
+    h.avgBuy = h.qty > 0 ? h.buyAmt / (h.qty + /* sold */ 0) : 0;
+  });
+  return hold;
+}
+
+/* ── 현재가 입력 UI 렌더 ── */
+function renderCurPriceInputs() {
+  const grid = document.getElementById('curprice-grid');
+  if (!grid) return;
+  const hold = calcHoldings();
+  const activeHold = Object.entries(hold).filter(([, d]) => d.qty > 0);
+  if (!activeHold.length) {
+    grid.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0;">보유 중인 종목이 없습니다.</div>';
+    return;
+  }
+  grid.innerHTML = activeHold.map(([name]) => {
+    const cur = curPrices[name] || '';
+    return `<div class="curprice-row">
+      <span class="curprice-name" title="${esc(name)}">${esc(name)}</span>
+      <input class="curprice-input" type="number" min="0"
+        id="cp-${CSS.escape(name)}"
+        value="${cur}"
+        placeholder="현재가"
+        onchange="curPrices['${esc(name).replace(/'/g,"\\'")}'] = Number(this.value)||0">
+    </div>`;
+  }).join('');
+}
+
+function applyCurrentPrices() {
+  // 입력값 수집
+  const hold = calcHoldings();
+  Object.keys(hold).filter(n => hold[n].qty > 0).forEach(name => {
+    const inp = document.getElementById('cp-' + CSS.escape(name));
+    if (inp) curPrices[name] = Number(inp.value) || 0;
+  });
+  saveCurPrices();
+  renderStatsSummary();
+  renderAccountPnL();
+  renderHoldingsTable();
+  toast('현재가가 적용되었습니다', 'ok');
+}
+
+/* ── 계좌별 실현 손익 카드 ── */
+function renderAccountPnL() {
+  const grid = document.getElementById('acct-pnl-grid');
+  if (!grid) return;
+  const accounts = getAccounts();
+  if (!accounts.length) {
+    grid.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0;">계좌를 등록하면 계좌별 손익이 표시됩니다.</div>';
+    return;
+  }
+
+  // 전체 계좌 + 등록 계좌 각각 집계
+  const allAccts = [...accounts.map(a => a.name), '미지정', '전체'];
+  const acctData = {};
+  allAccts.forEach(n => { acctData[n] = { realPnL: 0, evalPnL: 0, trades: 0, hasPnL: false }; });
+
+  jt.trades.forEach(t => {
+    const acct = (t.acctName && acctData[t.acctName]) ? t.acctName : '미지정';
+    acctData[acct].trades++;
+    acctData['전체'].trades++;
+    if (t.type === 'SELL' && t.avgBuyPrice && t.price) {
+      const p = (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
+      acctData[acct].realPnL += p;
+      acctData['전체'].realPnL += p;
+      acctData[acct].hasPnL = true;
+      acctData['전체'].hasPnL = true;
+    }
+  });
+
+  // 평가 손익 계산 (현재가 기반)
+  const hold = calcHoldings();
+  Object.entries(hold).filter(([, d]) => d.qty > 0).forEach(([name, d]) => {
+    const cur = curPrices[name] || 0;
+    if (!cur) return;
+    const avgBuy = d.qty > 0 ? d.buyAmt / d.qty : 0;
+    const evalPnL = (cur - avgBuy) * d.qty;
+    // 계좌별 배분
+    Object.entries(d.accts).forEach(([acct, qty]) => {
+      const key = acctData[acct] ? acct : '미지정';
+      const ep  = (cur - avgBuy) * qty;
+      acctData[key].evalPnL += ep;
+      acctData['전체'].evalPnL += ep;
+    });
+  });
+
+  const cards = [...accounts.map(a => a.name), '전체'];
+  grid.innerHTML = cards.map(name => {
+    const d = acctData[name];
+    if (!d) return '';
+    const rSign  = d.realPnL >= 0 ? '+' : '';
+    const rCls   = d.hasPnL ? (d.realPnL > 0 ? 'green' : d.realPnL < 0 ? 'red' : '') : '';
+    const eSign  = d.evalPnL >= 0 ? '+' : '';
+    const eCls   = d.evalPnL > 0 ? 'eval-pos' : d.evalPnL < 0 ? 'eval-neg' : '';
+    const isTotal = name === '전체';
+    return `<div class="acct-pnl-card" style="${isTotal ? '--purple:#059669' : ''}">
+      <div class="acct-pnl-label">🏦 ${esc(name)} <span style="font-weight:400;color:var(--text3)">(${d.trades}건)</span></div>
+      <div class="acct-pnl-val" style="color:var(--${rCls || 'text'});font-size:15px">
+        실현 ${d.hasPnL ? rSign + Math.round(d.realPnL).toLocaleString() + '원' : '—'}
+      </div>
+      ${curPrices && Object.keys(curPrices).length
+        ? `<div class="acct-pnl-sub ${eCls}">평가 ${d.evalPnL !== 0 ? eSign + Math.round(d.evalPnL).toLocaleString() + '원' : '—'}</div>`
+        : '<div class="acct-pnl-sub">현재가 입력 시 평가 손익 표시</div>'}
+    </div>`;
+  }).join('');
+}
+
+async function initStats() {
+  if (jt.trades.length === 0) await loadTrades();
+  if (nt.notes.length  === 0) await loadNotes();
+  setChartDefaults();
+  renderStatsSummary();
+  renderInsightCards();
+  renderSectorChart();
+  renderMonthlyChart();
+  renderReasonChart();
+  renderEmotionChart();
+  renderHoldingsTable();
+  renderAccountPnL();
+  renderCurPriceInputs();
+}
+
+function setChartDefaults() {
+  if (typeof Chart === 'undefined') return;
+  Chart.defaults.color         = '#6b7280';
+  Chart.defaults.borderColor   = '#e5e9f2';
+  Chart.defaults.font.family   = "'Noto Sans KR', sans-serif";
+  Chart.defaults.font.size     = 11;
+}
+
+/* ── 요약 통계 ── */
+function renderStatsSummary() {
+  const sells = jt.trades.filter(t => t.type === 'SELL' && t.avgBuyPrice && t.price);
+  let total = 0, wins = 0;
+  sells.forEach(t => {
+    const p = (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
+    total += p; if (p > 0) wins++;
+  });
+  const wr   = sells.length ? ((wins / sells.length) * 100).toFixed(0) + '%' : '—';
+  const sign = total >= 0 ? '+' : '';
+
+  document.getElementById('as-stocks').textContent = st.stocks.length;
+  document.getElementById('as-trades').textContent = jt.trades.length;
+  document.getElementById('as-notes').textContent  = nt.notes.length;
+  document.getElementById('as-wr').textContent     = wr;
+
+  const pnlEl = document.getElementById('as-pnl');
+  if (sells.length) {
+    pnlEl.textContent = sign + Math.round(total).toLocaleString() + '원';
+    pnlEl.className   = 'stat-val ' + (total > 0 ? 'green' : total < 0 ? 'red' : '');
+  } else {
+    pnlEl.textContent = '—';
+    pnlEl.className   = 'stat-val';
+  }
+
+  // 평가 손익 (현재가 기반)
+  const hold = calcHoldings();
+  let evalTotal = 0, hasEval = false;
+  Object.entries(hold).filter(([, d]) => d.qty > 0).forEach(([name, d]) => {
+    const cur = curPrices[name] || 0;
+    if (!cur) return;
+    const avgBuy = d.qty > 0 ? d.buyAmt / d.qty : 0;
+    evalTotal += (cur - avgBuy) * d.qty;
+    hasEval = true;
+  });
+  const evalEl = document.getElementById('as-eval-pnl');
+  if (evalEl) {
+    if (hasEval) {
+      const eSign = evalTotal >= 0 ? '+' : '';
+      evalEl.textContent = eSign + Math.round(evalTotal).toLocaleString() + '원';
+      evalEl.className   = 'stat-val ' + (evalTotal > 0 ? 'green' : evalTotal < 0 ? 'red' : '');
+    } else {
+      evalEl.textContent = '현재가 미입력';
+      evalEl.className   = 'stat-val';
+      evalEl.style.fontSize = '12px';
+    }
+  }
+}
+
+/* ── 인사이트 카드 ── */
+function renderInsightCards() {
+  // 종목별 손익 집계
+  const stockPnL = {};
+  jt.trades.filter(t => t.type === 'SELL' && t.avgBuyPrice && t.price).forEach(t => {
+    const p = (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
+    stockPnL[t.stockName] = (stockPnL[t.stockName] || 0) + p;
+  });
+  const entries = Object.entries(stockPnL);
+  if (entries.length) {
+    const best  = entries.reduce((a, b) => b[1] > a[1] ? b : a);
+    const worst = entries.reduce((a, b) => b[1] < a[1] ? b : a);
+    const bSign = best[1]  >= 0 ? '+' : '';
+    const wSign = worst[1] >= 0 ? '+' : '';
+    document.getElementById('ins-best').textContent =
+      `${best[0]} (${bSign}${Math.round(best[1]).toLocaleString()}원)`;
+    document.getElementById('ins-worst').textContent =
+      `${worst[0]} (${wSign}${Math.round(worst[1]).toLocaleString()}원)`;
+    document.getElementById('ins-best').style.color  = best[1]  > 0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('ins-worst').style.color = worst[1] > 0 ? 'var(--green)' : 'var(--red)';
+  }
+
+  // 최다 매매 이유
+  const reasonCount = {};
+  jt.trades.filter(t => t.reason).forEach(t => {
+    reasonCount[t.reason] = (reasonCount[t.reason] || 0) + 1;
+  });
+  const topReason = Object.entries(reasonCount).sort((a,b) => b[1]-a[1])[0];
+  if (topReason) document.getElementById('ins-reason').textContent =
+    `${topReason[0]} (${topReason[1]}회)`;
+
+  // 감정별 평균 손익 — 최고
+  const emoData = {};
+  jt.trades.filter(t => t.emotion && t.type === 'SELL' && t.avgBuyPrice && t.price).forEach(t => {
+    if (!emoData[t.emotion]) emoData[t.emotion] = { sum: 0, cnt: 0 };
+    emoData[t.emotion].sum += (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
+    emoData[t.emotion].cnt++;
+  });
+  const emoEntries = Object.entries(emoData).map(([k,v]) => [k, v.sum/v.cnt]);
+  if (emoEntries.length) {
+    const topEmo = emoEntries.sort((a,b) => b[1]-a[1])[0];
+    const eSign  = topEmo[1] >= 0 ? '+' : '';
+    document.getElementById('ins-emotion').textContent =
+      `${topEmo[0]} (평균 ${eSign}${Math.round(topEmo[1]).toLocaleString()}원)`;
+    document.getElementById('ins-emotion').style.color =
+      topEmo[1] > 0 ? 'var(--green)' : 'var(--red)';
+  }
+}
+
+/* ── 차트 공통 헬퍼 ── */
+function makeChart(id, config) {
+  if (typeof Chart === 'undefined') {
+    showChartEmpty(id, 'Chart.js 로딩 중입니다. 잠시 후 다시 클릭해주세요.'); return;
+  }
+  if (chartInst[id]) { chartInst[id].destroy(); delete chartInst[id]; }
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  canvas.style.display = '';
+  // 빈 상태 메시지 제거
+  const wrap = canvas.parentElement;
+  wrap.querySelectorAll('.chart-empty').forEach(el => el.remove());
+  chartInst[id] = new Chart(canvas.getContext('2d'), config);
+}
+
+function showChartEmpty(canvasId, msg) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  canvas.style.display = 'none';
+  const wrap = canvas.parentElement;
+  wrap.querySelectorAll('.chart-empty').forEach(el => el.remove());
+  const p = document.createElement('div');
+  p.className = 'chart-empty';
+  p.textContent = msg;
+  wrap.appendChild(p);
+}
+
+/* ── 섹터 비중 도넛 ── */
+function renderSectorChart() {
+  const countMap = {};
+  st.stocks.forEach(s => {
+    const sec = s.sector || '기타';
+    countMap[sec] = (countMap[sec] || 0) + 1;
+  });
+  if (!Object.keys(countMap).length) {
+    showChartEmpty('chart-sector', '관심종목을 추가하면 섹터 비중이 표시됩니다'); return;
+  }
+  const labels = Object.keys(countMap);
+  const data   = labels.map(l => countMap[l]);
+  const colors = labels.map(l => (SC[l] || SC['기타'])[1]);
+  const bgs    = labels.map(l => (SC[l] || SC['기타'])[0]);
+
+  makeChart('chart-sector', {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data, backgroundColor: colors,
+        borderColor: '#fff', borderWidth: 3, hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { padding: 14, boxWidth: 12, font: { size: 11 }, usePointStyle: true }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed}종목 (${Math.round(ctx.parsed / st.stocks.length * 100)}%)`
+          }
+        }
+      },
+      cutout: '60%'
+    }
+  });
+}
+
+/* ── 월별 손익 막대 ── */
+function renderMonthlyChart() {
+  const pnlMap = {};
+  jt.trades
+    .filter(t => t.type === 'SELL' && t.avgBuyPrice && t.price && t.date)
+    .forEach(t => {
+      const m   = String(t.date).slice(0, 7);
+      const pnl = (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
+      pnlMap[m] = (pnlMap[m] || 0) + pnl;
+    });
+
+  if (!Object.keys(pnlMap).length) {
+    showChartEmpty('chart-monthly', '평균매수가가 입력된 매도 거래가 있으면 표시됩니다'); return;
+  }
+
+  const labels = Object.keys(pnlMap).sort();
+  const data   = labels.map(l => Math.round(pnlMap[l]));
+  const bgColors  = data.map(v => v >= 0 ? 'rgba(5,150,105,.7)'  : 'rgba(220,38,38,.7)');
+  const bdrColors = data.map(v => v >= 0 ? '#059669' : '#dc2626');
+
+  makeChart('chart-monthly', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: '실현 손익',
+        data, backgroundColor: bgColors,
+        borderColor: bdrColors, borderWidth: 1, borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y.toLocaleString() + '원' } }
+      },
+      scales: {
+        y: {
+          grid: { color: '#f0f4f8' },
+          ticks: {
+            callback: v => {
+              if (Math.abs(v) >= 1000000) return (v/1000000).toFixed(0) + 'M';
+              if (Math.abs(v) >= 10000)   return (v/10000).toFixed(0) + '만';
+              return v;
+            }
+          }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+/* ── 매매 이유별 거래 수 수평 막대 ── */
+function renderReasonChart() {
+  const cnt = {};
+  jt.trades.filter(t => t.reason).forEach(t => {
+    cnt[t.reason] = (cnt[t.reason] || 0) + 1;
+  });
+  if (!Object.keys(cnt).length) {
+    showChartEmpty('chart-reason', '매매 이유가 기록된 거래가 있으면 표시됩니다'); return;
+  }
+  const sorted = Object.entries(cnt).sort((a,b) => b[1] - a[1]);
+  makeChart('chart-reason', {
+    type: 'bar',
+    data: {
+      labels: sorted.map(([k]) => k),
+      datasets: [{
+        label: '거래 수',
+        data:  sorted.map(([,v]) => v),
+        backgroundColor: 'rgba(37,99,235,.65)',
+        borderColor: '#2563eb',
+        borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#f0f4f8' }, ticks: { stepSize: 1 } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+/* ── 감정별 평균 손익 ── */
+function renderEmotionChart() {
+  const emo = {};
+  jt.trades
+    .filter(t => t.emotion && t.type === 'SELL' && t.avgBuyPrice && t.price)
+    .forEach(t => {
+      if (!emo[t.emotion]) emo[t.emotion] = { sum: 0, cnt: 0 };
+      emo[t.emotion].sum += (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
+      emo[t.emotion].cnt++;
+    });
+
+  if (!Object.keys(emo).length) {
+    showChartEmpty('chart-emotion', '감정이 기록된 매도 거래가 있으면 표시됩니다'); return;
+  }
+
+  const entries = Object.entries(emo).map(([k, v]) => [k, Math.round(v.sum / v.cnt)]);
+  entries.sort((a, b) => b[1] - a[1]);
+
+  makeChart('chart-emotion', {
+    type: 'bar',
+    data: {
+      labels: entries.map(([k]) => k),
+      datasets: [{
+        label: '평균 손익',
+        data:  entries.map(([,v]) => v),
+        backgroundColor: entries.map(([,v]) => v >= 0 ? 'rgba(5,150,105,.65)' : 'rgba(220,38,38,.65)'),
+        borderRadius: 4, borderWidth: 0
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' 평균 ' + ctx.parsed.x.toLocaleString() + '원' } }
+      },
+      scales: {
+        x: {
+          grid: { color: '#f0f4f8' },
+          ticks: { callback: v => Math.abs(v) >= 10000 ? (v/10000).toFixed(0) + '만' : v }
+        },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+/* ── 종목별 매매 현황 테이블 ── */
+function renderHoldingsTable() {
+  // 종목별 집계
+  const map = {};
+  jt.trades.forEach(t => {
+    const n = t.stockName; if (!n) return;
+    if (!map[n]) map[n] = {
+      buys: 0, buyAmt: 0, buyQty: 0, sells: 0,
+      pnl: 0, hasPnL: false, holdQty: 0,
+      accts: new Set()
+    };
+    const qty   = Number(t.quantity || 0);
+    const price = Number(t.price || 0);
+    if (t.type === 'BUY') {
+      map[n].buys++;
+      map[n].buyAmt += price * qty;
+      map[n].buyQty += qty;
+      map[n].holdQty += qty;
+      if (t.acctName) map[n].accts.add(t.acctName);
+    } else {
+      map[n].sells++;
+      map[n].holdQty -= qty;
+      const r = calcPnL(t);
+      if (r) { map[n].pnl += r.pnl; map[n].hasPnL = true; }
+      if (t.acctName) map[n].accts.add(t.acctName);
+    }
+  });
+
+  const tbody = document.getElementById('holdings-body');
+  const rows  = Object.entries(map);
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:28px">거래 기록이 없습니다</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.sort((a,b) => b[1].buyAmt - a[1].buyAmt).map(([name, d]) => {
+    const stock    = st.stocks.find(s => s.name === name) || {};
+    const [bg, fg] = SC[stock.sector || '기타'] || SC['기타'];
+    const avgP     = d.buyQty ? Math.round(d.buyAmt / d.buyQty) : 0;
+    const pnlPct   = d.hasPnL && d.buyAmt ? ((d.pnl / d.buyAmt) * 100).toFixed(1) : null;
+    const sign     = d.pnl >= 0 ? '+' : '';
+    const cls      = d.hasPnL ? (d.pnl > 0 ? 'pnl-pos' : 'pnl-neg') : '';
+    const acctText = d.accts.size ? [...d.accts].join(', ') : '—';
+
+    // 현재가 기반 평가 손익
+    const holdQty = Math.max(0, d.holdQty);
+    const curP    = curPrices[name] || 0;
+    let evalHTML  = '—';
+    let curHTML   = '—';
+    if (curP) {
+      curHTML = `₩${curP.toLocaleString()}`;
+      if (holdQty > 0) {
+        const evalPnL = (curP - avgP) * holdQty;
+        const ePct    = avgP ? ((curP - avgP) / avgP * 100).toFixed(1) : 0;
+        const eSign   = evalPnL >= 0 ? '+' : '';
+        const eCls    = evalPnL > 0 ? 'pnl-pos' : evalPnL < 0 ? 'pnl-neg' : '';
+        evalHTML = `<span class="${eCls}">${eSign}${Math.round(evalPnL).toLocaleString()}원<br><small>${eSign}${ePct}%</small></span>`;
+      }
+    }
+
+    return `<tr>
+      <td><strong>${esc(name)}</strong>${holdQty > 0 ? `<br><small style="color:var(--text3);font-size:10px">${holdQty.toLocaleString()}주 보유</small>` : ''}</td>
+      <td>
+        <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;
+          background:${bg};color:${fg}">${esc(stock.sector || '기타')}</span>
+      </td>
+      <td style="font-size:11px;color:var(--text2);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(acctText)}">${esc(acctText)}</td>
+      <td class="h-num">${d.buys}회</td>
+      <td class="h-num">₩${d.buyAmt.toLocaleString()}</td>
+      <td class="h-num">₩${avgP.toLocaleString()}</td>
+      <td class="h-num" style="color:var(--blue);font-weight:600">${curHTML}</td>
+      <td class="h-num">${d.sells}회</td>
+      <td class="h-num ${cls}">${d.hasPnL ? sign + Math.round(d.pnl).toLocaleString() + '원' : '—'}</td>
+      <td class="h-num">${evalHTML}</td>
+      <td class="h-num ${cls}">${pnlPct !== null ? sign + pnlPct + '%' : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+
 async function loadStocks() {
   document.getElementById('stocks-grid').innerHTML =
     '<div class="loading"><div class="spinner"></div><p>불러오는 중…</p></div>';
