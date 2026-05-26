@@ -639,6 +639,97 @@
       #api-url-input { min-width: unset; width: 100%; }
       .nav-tab { padding: 15px 12px; font-size: 12px; }
     }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       계좌 관리
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    /* 계좌 탭 필 */
+    .acct-tabs {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      margin-bottom: 0; align-items: center;
+    }
+    .acct-tab {
+      padding: 5px 14px; border-radius: 100px; font-size: 12px;
+      font-weight: 600; cursor: pointer; user-select: none;
+      border: 1px solid var(--border2); color: var(--text2);
+      background: var(--surface); transition: all .15s;
+      box-shadow: var(--shadow-sm);
+    }
+    .acct-tab:hover  { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+    .acct-tab.active {
+      background: var(--blue); border-color: var(--blue);
+      color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,.3);
+    }
+    .btn-manage-acct {
+      background: none; border: 1px dashed var(--border2);
+      color: var(--text3); font-size: 11px; font-weight: 600;
+      padding: 5px 11px; border-radius: 100px;
+      cursor: pointer; font-family: inherit;
+      transition: all .15s; white-space: nowrap;
+    }
+    .btn-manage-acct:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+
+    /* 계좌 관리 모달 */
+    .acct-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .acct-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 8px 12px;
+    }
+    .acct-name-display { flex: 1; font-size: 13px; font-weight: 600; }
+    .acct-trade-cnt {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 100px;
+      background: var(--surface); color: var(--text3);
+      border: 1px solid var(--border2); min-width: 28px; text-align: center;
+    }
+    .acct-edit-input {
+      flex: 1; background: #fff; border: 1px solid var(--blue);
+      color: var(--text); padding: 4px 8px;
+      border-radius: 6px; font-size: 13px; font-weight: 600;
+      font-family: inherit; outline: none;
+    }
+    .btn-ae {
+      background: none; border: 1px solid var(--border2);
+      color: var(--text3); font-size: 11px; padding: 4px 9px;
+      border-radius: 6px; cursor: pointer; font-family: inherit;
+      transition: all .13s; font-weight: 500; flex-shrink: 0;
+    }
+    .btn-ae.edit:hover  { background: var(--blue-dim); color: var(--blue); border-color: var(--blue-soft); }
+    .btn-ae.del:hover   { background: var(--red-dim);  color: var(--red);  border-color: #fecaca; }
+    .btn-ae.ok:hover    { background: var(--green-dim);color: var(--green);border-color: var(--green-soft); }
+    .btn-ae.cancel:hover{ background: var(--border);   color: var(--text2); }
+    .acct-add-row {
+      display: flex; gap: 8px; align-items: center;
+    }
+
+    /* 계좌 배지 (거래 카드 내) */
+    .acct-badge {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 4px;
+      background: var(--purple); color: #fff;
+      opacity: .85;
+    }
+
+    /* 거래 리스트 섹션 구분 헤더 */
+    .acct-section-header {
+      display: flex; align-items: center; gap: 10px;
+      margin: 18px 0 10px;
+    }
+    .acct-section-title {
+      font-size: 13px; font-weight: 700; color: var(--text2);
+    }
+    .acct-section-pnl {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; font-weight: 700;
+      padding: 2px 10px; border-radius: 100px;
+    }
+    .acct-section-pnl.pos { background: var(--green-dim); color: var(--green); }
+    .acct-section-pnl.neg { background: var(--red-dim);   color: var(--red); }
+    .acct-section-pnl.zer { background: var(--surface2);  color: var(--text3); }
+    .acct-section-line {
+      flex: 1; height: 1px; background: var(--border2);
+    }
   </style>
 </head>
 <body>
@@ -745,6 +836,12 @@
       <div class="stat-label">승률</div>
       <div class="stat-val" id="j-wr">-</div>
     </div>
+  </div>
+
+  <!-- 계좌 탭 -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+    <div class="acct-tabs" id="acct-tabs"></div>
+    <button class="btn-manage-acct" onclick="openAcctModal()">🏦 계좌 관리</button>
   </div>
 
   <!-- 필터 바 -->
@@ -881,6 +978,14 @@
           </select>
         </div>
 
+        <!-- 계좌 선택 -->
+        <div class="fg full">
+          <label>계좌 *</label>
+          <select id="jf-acct" class="fs">
+            <option value="">계좌 선택…</option>
+          </select>
+        </div>
+
         <!-- 날짜 / 가격 -->
         <div class="fg">
           <label>거래 날짜 *</label>
@@ -951,6 +1056,31 @@
     © 2026 <strong style="color:var(--blue);font-weight:600;">sungce</strong> · StockNote
   </span>
 </footer>
+
+<!-- ══ 계좌 관리 모달 ══ -->
+<div id="modal-acct" class="overlay" onclick="if(event.target.id==='modal-acct')closeAcctModal()">
+  <div class="modal-box" style="max-width:420px">
+    <div class="m-head">
+      <span class="m-title">🏦 계좌 관리</span>
+      <button class="m-close" onclick="closeAcctModal()">✕</button>
+    </div>
+    <div class="m-body">
+      <p style="font-size:12px;color:var(--text3);margin-bottom:14px;">
+        증권사·계좌 유형을 등록하세요. 거래 추가 시 계좌를 선택할 수 있습니다.
+      </p>
+      <div class="acct-list" id="acct-list-wrap"></div>
+      <div class="acct-add-row">
+        <input id="new-acct-name" class="fi" type="text" placeholder="예: 삼성증권 CMA" maxlength="20"
+          onkeydown="if(event.key==='Enter')addAccount()" style="flex:1;padding:8px 10px;font-size:13px;">
+        <button class="btn-ae ok" onclick="addAccount()" style="padding:7px 16px;font-size:12px;">＋ 추가</button>
+      </div>
+    </div>
+    <div class="m-foot">
+      <button class="btn-cancel" onclick="closeAcctModal()">닫기</button>
+      <button class="btn-save" onclick="saveAccounts()">저장</button>
+    </div>
+  </div>
+</div>
 
 <!-- ════════════════════════════════════════════
      SCRIPT
@@ -1337,6 +1467,173 @@ function esc(s) {
 }
 
 /* ════════════════════════════════════════════
+   계좌 관리 — ACCOUNT MANAGEMENT
+════════════════════════════════════════════ */
+const LS_ACCOUNTS = 'sn_accounts';
+const LS_ACCT_SEL = 'sn_acct_selected';
+
+function getAccounts() {
+  try { return JSON.parse(localStorage.getItem(LS_ACCOUNTS) || '[]'); }
+  catch { return []; }
+}
+function setAccountsStorage(arr) {
+  localStorage.setItem(LS_ACCOUNTS, JSON.stringify(arr));
+}
+
+let acctList    = getAccounts();   // [{id, name}]
+let acctEditing = null;            // 현재 편집 중인 계좌 id
+let selectedAcct = localStorage.getItem(LS_ACCT_SEL) || '전체'; // 현재 선택된 계좌
+
+/* ── 계좌 탭 렌더 ── */
+function renderAcctTabs() {
+  const wrap = document.getElementById('acct-tabs');
+  if (!wrap) return;
+  const tabs = ['전체', ...acctList.map(a => a.name)];
+  wrap.innerHTML = tabs.map(name =>
+    `<button class="acct-tab ${selectedAcct === name ? 'active' : ''}"
+      onclick="setAcctTab('${esc(name)}')">${esc(name)}</button>`
+  ).join('');
+}
+
+function setAcctTab(name) {
+  selectedAcct = name;
+  localStorage.setItem(LS_ACCT_SEL, name);
+  renderAcctTabs();
+  renderJournal();
+}
+
+/* ── 계좌 관리 모달 ── */
+function openAcctModal() {
+  acctEditing = null;
+  renderAcctModalList();
+  document.getElementById('new-acct-name').value = '';
+  document.getElementById('modal-acct').classList.add('open');
+}
+
+function closeAcctModal() {
+  document.getElementById('modal-acct').classList.remove('open');
+  acctEditing = null;
+}
+
+function renderAcctModalList() {
+  const wrap = document.getElementById('acct-list-wrap');
+  if (!wrap) return;
+  if (!acctList.length) {
+    wrap.innerHTML = '<p style="font-size:12px;color:var(--text3);text-align:center;padding:14px 0;">등록된 계좌가 없습니다.</p>';
+    return;
+  }
+  wrap.innerHTML = acctList.map((a, i) => {
+    const cnt = jt.trades.filter(t => t.acctName === a.name).length;
+    if (acctEditing === a.id) {
+      return `<div class="acct-row">
+        <input class="acct-edit-input" id="acct-edit-inp-${i}" value="${esc(a.name)}"
+          onkeydown="if(event.key==='Enter')confirmEditAcct('${a.id}',${i});if(event.key==='Escape')cancelEditAcct()">
+        <button class="btn-ae ok"     onclick="confirmEditAcct('${a.id}',${i})">✓</button>
+        <button class="btn-ae cancel" onclick="cancelEditAcct()">✕</button>
+      </div>`;
+    }
+    return `<div class="acct-row">
+      <span style="font-size:16px">🏦</span>
+      <span class="acct-name-display">${esc(a.name)}</span>
+      <span class="acct-trade-cnt">${cnt}건</span>
+      <button class="btn-ae edit" onclick="startEditAcct('${a.id}')">✏</button>
+      <button class="btn-ae del"  onclick="deleteAcct('${a.id}','${esc(a.name)}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function startEditAcct(id) {
+  acctEditing = id;
+  renderAcctModalList();
+  const idx = acctList.findIndex(a => a.id === id);
+  const inp = document.getElementById(`acct-edit-inp-${idx}`);
+  if (inp) { inp.focus(); inp.select(); }
+}
+
+function cancelEditAcct() {
+  acctEditing = null;
+  renderAcctModalList();
+}
+
+function confirmEditAcct(id, idx) {
+  const inp = document.getElementById(`acct-edit-inp-${idx}`);
+  if (!inp) return;
+  const newName = inp.value.trim();
+  const a = acctList.find(x => x.id === id);
+  if (!a) return;
+  const oldName = a.name;
+  if (!newName) { toast('계좌명을 입력해주세요', 'err'); return; }
+  if (newName !== oldName && acctList.some(x => x.name === newName)) {
+    toast('이미 존재하는 계좌명입니다', 'err'); return;
+  }
+  a.name = newName;
+  // 거래 기록 계좌명도 일괄 변경
+  jt.trades.forEach(t => { if (t.acctName === oldName) t.acctName = newName; });
+  try {
+    const list = JSON.parse(localStorage.getItem('sn_trades') || '[]');
+    list.forEach(t => { if (t.acctName === oldName) t.acctName = newName; });
+    localStorage.setItem('sn_trades', JSON.stringify(list));
+  } catch {}
+  if (selectedAcct === oldName) {
+    selectedAcct = newName;
+    localStorage.setItem(LS_ACCT_SEL, newName);
+  }
+  acctEditing = null;
+  renderAcctModalList();
+  toast(`"${oldName}" → "${newName}" 수정됨`, 'ok');
+}
+
+function deleteAcct(id, name) {
+  const cnt = jt.trades.filter(t => t.acctName === name).length;
+  const msg = cnt > 0
+    ? `"${name}" 계좌를 삭제하면 ${cnt}건의 거래에서 계좌 정보가 제거됩니다. 계속하시겠습니까?`
+    : `"${name}" 계좌를 삭제하시겠습니까?`;
+  if (!confirm(msg)) return;
+  acctList = acctList.filter(a => a.id !== id);
+  // 거래의 acctName 제거
+  jt.trades.forEach(t => { if (t.acctName === name) t.acctName = ''; });
+  try {
+    const list = JSON.parse(localStorage.getItem('sn_trades') || '[]');
+    list.forEach(t => { if (t.acctName === name) t.acctName = ''; });
+    localStorage.setItem('sn_trades', JSON.stringify(list));
+  } catch {}
+  if (selectedAcct === name) { selectedAcct = '전체'; localStorage.setItem(LS_ACCT_SEL, '전체'); }
+  renderAcctModalList();
+  toast(`"${name}" 계좌 삭제됨`, 'info');
+}
+
+function addAccount() {
+  const inp = document.getElementById('new-acct-name');
+  const name = inp.value.trim();
+  if (!name) { toast('계좌명을 입력해주세요', 'err'); return; }
+  if (acctList.some(a => a.name === name)) { toast('이미 존재하는 계좌명입니다', 'err'); return; }
+  const id = Date.now().toString(36) + Math.random().toString(36).substr(2,4);
+  acctList.push({ id, name });
+  inp.value = '';
+  renderAcctModalList();
+  toast(`"${name}" 계좌 추가됨`, 'ok');
+}
+
+function saveAccounts() {
+  setAccountsStorage(acctList);
+  renderAcctTabs();
+  // 거래 추가 모달의 계좌 셀렉트 갱신
+  refreshAcctSelect();
+  closeAcctModal();
+  toast('계좌 설정이 저장되었습니다', 'ok');
+}
+
+/* 거래 모달 내 계좌 셀렉트 갱신 */
+function refreshAcctSelect() {
+  const sel = document.getElementById('jf-acct');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">계좌 선택…</option>' +
+    acctList.map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
+  if (cur) sel.value = cur;
+}
+
+/* ════════════════════════════════════════════
    매매일지 — TRADE JOURNAL
 ════════════════════════════════════════════ */
 const EMOTIONS = ['냉정','기대','흥분','불안','후회','만족'];
@@ -1441,10 +1738,11 @@ function getFilteredTrades() {
   const mf = document.getElementById('j-month-filter').value;
   return jt.trades
     .filter(t => {
-      const bySt = !sf || t.stockName === sf;
-      const byTy = !tf || t.type === tf;
-      const byMo = !mf || (t.date || '').startsWith(mf);
-      return bySt && byTy && byMo;
+      const bySt  = !sf || t.stockName === sf;
+      const byTy  = !tf || t.type === tf;
+      const byMo  = !mf || (t.date || '').startsWith(mf);
+      const byAcc = selectedAcct === '전체' || (t.acctName || '') === selectedAcct;
+      return bySt && byTy && byMo && byAcc;
     })
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 }
@@ -1462,7 +1760,42 @@ function renderJournal() {
     </div>`;
     return;
   }
-  list.innerHTML = filt.map(tradeCardHTML).join('');
+
+  // 계좌별 그룹핑
+  if (selectedAcct === '전체' && acctList.length > 0) {
+    // 등록 계좌 + 미지정 순으로 그룹
+    const groups = {};
+    acctList.forEach(a => { groups[a.name] = []; });
+    groups['미지정'] = [];
+    filt.forEach(t => {
+      const key = (t.acctName && groups[t.acctName] !== undefined) ? t.acctName : '미지정';
+      groups[key].push(t);
+    });
+
+    let html = '';
+    const allGroups = [...acctList.map(a => a.name), '미지정'];
+    allGroups.forEach(gName => {
+      const trades = groups[gName];
+      if (!trades || !trades.length) return;
+      // 계좌 내 손익 합산
+      let pnl = 0, hasPnL = false;
+      trades.forEach(t => { const r = calcPnL(t); if (r) { pnl += r.pnl; hasPnL = true; } });
+      const sign = pnl >= 0 ? '+' : '';
+      const cls  = hasPnL ? (pnl > 0 ? 'pos' : pnl < 0 ? 'neg' : 'zer') : 'zer';
+      const pnlText = hasPnL ? `${sign}${Math.round(pnl).toLocaleString()}원` : '손익 없음';
+      html += `<div class="acct-section-header">
+        <span style="font-size:16px">🏦</span>
+        <span class="acct-section-title">${esc(gName)}</span>
+        <span class="acct-section-pnl ${cls}">${pnlText}</span>
+        <div class="acct-section-line"></div>
+        <span style="font-size:11px;color:var(--text3)">${trades.length}건</span>
+      </div>`;
+      html += trades.map(tradeCardHTML).join('');
+    });
+    list.innerHTML = html;
+  } else {
+    list.innerHTML = filt.map(tradeCardHTML).join('');
+  }
 }
 
 /* ── 수익률 계산 ── */
@@ -1506,8 +1839,9 @@ function tradeCardHTML(t) {
   const total = Number(t.price || 0) * Number(t.quantity || 0);
   const r    = calcPnL(t);
   const chips = [];
-  if (t.reason)  chips.push(`<span class="chip reason">${esc(t.reason)}</span>`);
-  if (t.emotion) chips.push(`<span class="chip emotion">${esc(t.emotion)}</span>`);
+  if (t.acctName) chips.push(`<span class="acct-badge">🏦 ${esc(t.acctName)}</span>`);
+  if (t.reason)   chips.push(`<span class="chip reason">${esc(t.reason)}</span>`);
+  if (t.emotion)  chips.push(`<span class="chip emotion">${esc(t.emotion)}</span>`);
 
   let pnlHTML = '';
   if (r !== null) {
@@ -1567,6 +1901,11 @@ function openTradeModal(trade = null) {
   sel.innerHTML = '<option value="">종목 선택…</option>' +
     st.stocks.map(s => `<option value="${esc(s.name)}">${esc(s.name)}${s.code ? ' (' + s.code + ')' : ''}</option>`).join('');
   if (trade) sel.value = trade.stockName || '';
+
+  // 계좌 목록
+  refreshAcctSelect();
+  if (trade && trade.acctName) document.getElementById('jf-acct').value = trade.acctName;
+  else if (selectedAcct !== '전체') document.getElementById('jf-acct').value = selectedAcct;
 
   const today = new Date().toISOString().slice(0, 10);
   document.getElementById('jf-date').value   = trade ? (trade.date || today)        : today;
@@ -1655,6 +1994,7 @@ async function saveTrade() {
 
   const data = {
     stockName,
+    acctName:    document.getElementById('jf-acct').value || '',
     type:        jt.tradeType,
     date:        document.getElementById('jf-date').value,
     price,
@@ -1724,6 +2064,7 @@ function init() {
   updateBadge();
   renderPills();
   renderSectorOpts();
+  renderAcctTabs();
   loadStocks();
 }
 
