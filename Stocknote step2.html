@@ -1498,7 +1498,6 @@ document.querySelectorAll('.nav-tab:not(.soon)').forEach(tab => {
     const page = tab.dataset.page;
     document.getElementById('page-' + page).classList.add('active');
     if (page === 'journal' && jt.trades.length === 0) loadTrades();
-    if (page === 'notes'   && nt.notes.length  === 0) loadNotes();
     if (page === 'stats') initStats();
   });
 });
@@ -2462,7 +2461,6 @@ function renderAccountPnL() {
 
 async function initStats() {
   if (jt.trades.length === 0) await loadTrades();
-  if (nt.notes.length  === 0) await loadNotes();
   setChartDefaults();
   renderStatsSummary();
   renderInsightCards();
@@ -2496,7 +2494,7 @@ function renderStatsSummary() {
 
   document.getElementById('as-stocks').textContent = st.stocks.length;
   document.getElementById('as-trades').textContent = jt.trades.length;
-  document.getElementById('as-notes').textContent  = nt.notes.length;
+  document.getElementById('as-notes').textContent  = '-';
   document.getElementById('as-wr').textContent     = wr;
 
   const pnlEl = document.getElementById('as-pnl');
