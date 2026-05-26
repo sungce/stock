@@ -863,6 +863,83 @@
       #api-url-input { min-width: unset; width: 100%; }
       .nav-tab { padding: 15px 12px; font-size: 12px; }
     }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       계좌별 손익 & 현재가 섹션
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .acct-pnl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px; margin-bottom: 20px;
+    }
+    .acct-pnl-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+      position: relative; overflow: hidden;
+    }
+    .acct-pnl-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+      background: var(--purple);
+    }
+    .acct-pnl-label {
+      font-size: 11px; color: var(--text3); font-weight: 600;
+      margin-bottom: 6px; display: flex; align-items: center; gap: 5px;
+    }
+    .acct-pnl-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px; font-weight: 700;
+    }
+    .acct-pnl-sub {
+      font-size: 11px; color: var(--text3); margin-top: 3px;
+    }
+
+    /* 현재가 입력 */
+    .curprice-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 20px;
+    }
+    .curprice-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px; margin-top: 12px;
+    }
+    .curprice-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 7px 10px;
+    }
+    .curprice-name {
+      flex: 1; font-size: 12px; font-weight: 600; color: var(--text2);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .curprice-input {
+      width: 90px; background: #fff; border: 1px solid var(--border2);
+      color: var(--text); padding: 4px 7px;
+      border-radius: 6px; font-size: 12px; font-family: 'JetBrains Mono', monospace;
+      outline: none; transition: border-color .15s;
+      text-align: right;
+    }
+    .curprice-input:focus { border-color: var(--blue); }
+
+    .btn-refresh-price {
+      background: var(--blue-dim); color: var(--blue);
+      border: 1px solid var(--blue-soft); padding: 5px 14px;
+      border-radius: var(--r-sm); font-size: 12px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .btn-refresh-price:hover { background: var(--blue); color: #fff; }
+
+    /* 평가 손익 배지 */
+    .eval-pos { color: var(--green); }
+    .eval-neg { color: var(--red); }
   </style>
 </head>
 <body>
@@ -1041,12 +1118,37 @@
       <div class="stat-val"       id="as-pnl">-</div>
     </div>
     <div class="stat-card">
+      <div class="stat-label">평가 손익 (현재가)</div>
+      <div class="stat-val"       id="as-eval-pnl">-</div>
+    </div>
+    <div class="stat-card">
       <div class="stat-label">승률</div>
       <div class="stat-val"       id="as-wr">-</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">작성 노트</div>
       <div class="stat-val"       id="as-notes">-</div>
+    </div>
+  </div>
+
+  <!-- 계좌별 실현 손익 카드 -->
+  <div class="stats-section" style="margin-bottom:20px">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>🏦 계좌별 실현 손익</span>
+    </div>
+    <div class="acct-pnl-grid" id="acct-pnl-grid" style="margin-top:14px">
+      <div style="color:var(--text3);font-size:12px;padding:8px 0;">계좌를 등록하면 계좌별 손익이 표시됩니다.</div>
+    </div>
+  </div>
+
+  <!-- 현재가 입력 섹션 -->
+  <div class="curprice-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div class="section-title">📡 현재가 입력 <span style="font-size:10px;font-weight:400;color:var(--text3);margin-left:6px;">— 보유 종목의 현재 시세를 입력하면 평가 손익이 계산됩니다</span></div>
+      <button class="btn-refresh-price" onclick="applyCurrentPrices()">✓ 적용하여 재계산</button>
+    </div>
+    <div class="curprice-grid" id="curprice-grid">
+      <div style="color:var(--text3);font-size:12px;padding:8px 0;">보유 중인 종목이 없습니다.</div>
     </div>
   </div>
 
@@ -1116,23 +1218,26 @@
 
   <!-- 종목별 매매 현황 테이블 -->
   <div class="stats-section">
-    <div class="section-title">💼 종목별 매매 현황</div>
+    <div class="section-title">💼 종목별 매매 현황 (현재가 반영)</div>
     <div style="overflow-x:auto">
       <table class="h-table">
         <thead>
           <tr>
             <th>종목</th>
             <th>섹터</th>
+            <th>계좌</th>
             <th class="h-num">매수</th>
             <th class="h-num">매수 총액</th>
             <th class="h-num">평균 매수가</th>
+            <th class="h-num">현재가</th>
             <th class="h-num">매도</th>
             <th class="h-num">실현 손익</th>
+            <th class="h-num">평가 손익</th>
             <th class="h-num">수익률</th>
           </tr>
         </thead>
         <tbody id="holdings-body">
-          <tr><td colspan="8" style="text-align:center;color:var(--text3);padding:28px">거래 기록이 없습니다</td></tr>
+          <tr><td colspan="11" style="text-align:center;color:var(--text3);padding:28px">거래 기록이 없습니다</td></tr>
         </tbody>
       </table>
     </div>
@@ -2467,6 +2572,157 @@ async function delNote(id) {
 const chartInst = {};
 
 /* ── 초기화 (탭 클릭 시마다 재계산) ── */
+/* ════════════════════════════════════════════
+   계좌 & 현재가 (stats 페이지용)
+════════════════════════════════════════════ */
+const LS_ACCOUNTS   = 'sn_accounts';
+const LS_CUR_PRICES = 'sn_cur_prices';
+
+function getAccounts() {
+  try { return JSON.parse(localStorage.getItem(LS_ACCOUNTS) || '[]'); }
+  catch { return []; }
+}
+
+// 현재가 저장소 { stockName: price }
+let curPrices = (() => {
+  try { return JSON.parse(localStorage.getItem(LS_CUR_PRICES) || '{}'); }
+  catch { return {}; }
+})();
+
+function saveCurPrices() {
+  localStorage.setItem(LS_CUR_PRICES, JSON.stringify(curPrices));
+}
+
+/* ── 보유 종목 계산 (매수 - 매도 잔량) ── */
+function calcHoldings() {
+  // { stockName: { qty, avgBuy, accts:{acctName:qty} } }
+  const hold = {};
+  jt.trades
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+    .forEach(t => {
+      const n = t.stockName; if (!n) return;
+      if (!hold[n]) hold[n] = { qty: 0, buyAmt: 0, accts: {} };
+      const qty = Number(t.quantity || 0);
+      const price = Number(t.price || 0);
+      if (t.type === 'BUY') {
+        hold[n].qty    += qty;
+        hold[n].buyAmt += qty * price;
+        const acct = t.acctName || '미지정';
+        hold[n].accts[acct] = (hold[n].accts[acct] || 0) + qty;
+      } else {
+        hold[n].qty    -= qty;
+        if (hold[n].qty < 0) hold[n].qty = 0;
+      }
+    });
+  // avgBuy
+  Object.values(hold).forEach(h => {
+    h.avgBuy = h.qty > 0 ? h.buyAmt / (h.qty + /* sold */ 0) : 0;
+  });
+  return hold;
+}
+
+/* ── 현재가 입력 UI 렌더 ── */
+function renderCurPriceInputs() {
+  const grid = document.getElementById('curprice-grid');
+  if (!grid) return;
+  const hold = calcHoldings();
+  const activeHold = Object.entries(hold).filter(([, d]) => d.qty > 0);
+  if (!activeHold.length) {
+    grid.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0;">보유 중인 종목이 없습니다.</div>';
+    return;
+  }
+  grid.innerHTML = activeHold.map(([name]) => {
+    const cur = curPrices[name] || '';
+    return `<div class="curprice-row">
+      <span class="curprice-name" title="${esc(name)}">${esc(name)}</span>
+      <input class="curprice-input" type="number" min="0"
+        id="cp-${CSS.escape(name)}"
+        value="${cur}"
+        placeholder="현재가"
+        onchange="curPrices['${esc(name).replace(/'/g,"\\'")}'] = Number(this.value)||0">
+    </div>`;
+  }).join('');
+}
+
+function applyCurrentPrices() {
+  // 입력값 수집
+  const hold = calcHoldings();
+  Object.keys(hold).filter(n => hold[n].qty > 0).forEach(name => {
+    const inp = document.getElementById('cp-' + CSS.escape(name));
+    if (inp) curPrices[name] = Number(inp.value) || 0;
+  });
+  saveCurPrices();
+  renderStatsSummary();
+  renderAccountPnL();
+  renderHoldingsTable();
+  toast('현재가가 적용되었습니다', 'ok');
+}
+
+/* ── 계좌별 실현 손익 카드 ── */
+function renderAccountPnL() {
+  const grid = document.getElementById('acct-pnl-grid');
+  if (!grid) return;
+  const accounts = getAccounts();
+  if (!accounts.length) {
+    grid.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0;">계좌를 등록하면 계좌별 손익이 표시됩니다.</div>';
+    return;
+  }
+
+  // 전체 계좌 + 등록 계좌 각각 집계
+  const allAccts = [...accounts.map(a => a.name), '미지정', '전체'];
+  const acctData = {};
+  allAccts.forEach(n => { acctData[n] = { realPnL: 0, evalPnL: 0, trades: 0, hasPnL: false }; });
+
+  jt.trades.forEach(t => {
+    const acct = (t.acctName && acctData[t.acctName]) ? t.acctName : '미지정';
+    acctData[acct].trades++;
+    acctData['전체'].trades++;
+    if (t.type === 'SELL' && t.avgBuyPrice && t.price) {
+      const p = (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
+      acctData[acct].realPnL += p;
+      acctData['전체'].realPnL += p;
+      acctData[acct].hasPnL = true;
+      acctData['전체'].hasPnL = true;
+    }
+  });
+
+  // 평가 손익 계산 (현재가 기반)
+  const hold = calcHoldings();
+  Object.entries(hold).filter(([, d]) => d.qty > 0).forEach(([name, d]) => {
+    const cur = curPrices[name] || 0;
+    if (!cur) return;
+    const avgBuy = d.qty > 0 ? d.buyAmt / d.qty : 0;
+    const evalPnL = (cur - avgBuy) * d.qty;
+    // 계좌별 배분
+    Object.entries(d.accts).forEach(([acct, qty]) => {
+      const key = acctData[acct] ? acct : '미지정';
+      const ep  = (cur - avgBuy) * qty;
+      acctData[key].evalPnL += ep;
+      acctData['전체'].evalPnL += ep;
+    });
+  });
+
+  const cards = [...accounts.map(a => a.name), '전체'];
+  grid.innerHTML = cards.map(name => {
+    const d = acctData[name];
+    if (!d) return '';
+    const rSign  = d.realPnL >= 0 ? '+' : '';
+    const rCls   = d.hasPnL ? (d.realPnL > 0 ? 'green' : d.realPnL < 0 ? 'red' : '') : '';
+    const eSign  = d.evalPnL >= 0 ? '+' : '';
+    const eCls   = d.evalPnL > 0 ? 'eval-pos' : d.evalPnL < 0 ? 'eval-neg' : '';
+    const isTotal = name === '전체';
+    return `<div class="acct-pnl-card" style="${isTotal ? '--purple:#059669' : ''}">
+      <div class="acct-pnl-label">🏦 ${esc(name)} <span style="font-weight:400;color:var(--text3)">(${d.trades}건)</span></div>
+      <div class="acct-pnl-val" style="color:var(--${rCls || 'text'});font-size:15px">
+        실현 ${d.hasPnL ? rSign + Math.round(d.realPnL).toLocaleString() + '원' : '—'}
+      </div>
+      ${curPrices && Object.keys(curPrices).length
+        ? `<div class="acct-pnl-sub ${eCls}">평가 ${d.evalPnL !== 0 ? eSign + Math.round(d.evalPnL).toLocaleString() + '원' : '—'}</div>`
+        : '<div class="acct-pnl-sub">현재가 입력 시 평가 손익 표시</div>'}
+    </div>`;
+  }).join('');
+}
+
 async function initStats() {
   if (jt.trades.length === 0) await loadTrades();
   if (nt.notes.length  === 0) await loadNotes();
@@ -2478,6 +2734,8 @@ async function initStats() {
   renderReasonChart();
   renderEmotionChart();
   renderHoldingsTable();
+  renderAccountPnL();
+  renderCurPriceInputs();
 }
 
 function setChartDefaults() {
@@ -2511,6 +2769,29 @@ function renderStatsSummary() {
   } else {
     pnlEl.textContent = '—';
     pnlEl.className   = 'stat-val';
+  }
+
+  // 평가 손익 (현재가 기반)
+  const hold = calcHoldings();
+  let evalTotal = 0, hasEval = false;
+  Object.entries(hold).filter(([, d]) => d.qty > 0).forEach(([name, d]) => {
+    const cur = curPrices[name] || 0;
+    if (!cur) return;
+    const avgBuy = d.qty > 0 ? d.buyAmt / d.qty : 0;
+    evalTotal += (cur - avgBuy) * d.qty;
+    hasEval = true;
+  });
+  const evalEl = document.getElementById('as-eval-pnl');
+  if (evalEl) {
+    if (hasEval) {
+      const eSign = evalTotal >= 0 ? '+' : '';
+      evalEl.textContent = eSign + Math.round(evalTotal).toLocaleString() + '원';
+      evalEl.className   = 'stat-val ' + (evalTotal > 0 ? 'green' : evalTotal < 0 ? 'red' : '');
+    } else {
+      evalEl.textContent = '현재가 미입력';
+      evalEl.className   = 'stat-val';
+      evalEl.style.fontSize = '12px';
+    }
   }
 }
 
@@ -2768,46 +3049,78 @@ function renderEmotionChart() {
 
 /* ── 종목별 매매 현황 테이블 ── */
 function renderHoldingsTable() {
+  // 종목별 집계
   const map = {};
   jt.trades.forEach(t => {
     const n = t.stockName; if (!n) return;
-    if (!map[n]) map[n] = { buys: 0, buyAmt: 0, buyQty: 0, sells: 0, pnl: 0, hasPnL: false };
+    if (!map[n]) map[n] = {
+      buys: 0, buyAmt: 0, buyQty: 0, sells: 0,
+      pnl: 0, hasPnL: false, holdQty: 0,
+      accts: new Set()
+    };
+    const qty   = Number(t.quantity || 0);
+    const price = Number(t.price || 0);
     if (t.type === 'BUY') {
       map[n].buys++;
-      map[n].buyAmt += Number(t.price || 0) * Number(t.quantity || 0);
-      map[n].buyQty += Number(t.quantity || 0);
+      map[n].buyAmt += price * qty;
+      map[n].buyQty += qty;
+      map[n].holdQty += qty;
+      if (t.acctName) map[n].accts.add(t.acctName);
     } else {
       map[n].sells++;
+      map[n].holdQty -= qty;
       const r = calcPnL(t);
       if (r) { map[n].pnl += r.pnl; map[n].hasPnL = true; }
+      if (t.acctName) map[n].accts.add(t.acctName);
     }
   });
 
   const tbody = document.getElementById('holdings-body');
   const rows  = Object.entries(map);
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:28px">거래 기록이 없습니다</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:28px">거래 기록이 없습니다</td></tr>';
     return;
   }
 
   tbody.innerHTML = rows.sort((a,b) => b[1].buyAmt - a[1].buyAmt).map(([name, d]) => {
-    const stock   = st.stocks.find(s => s.name === name) || {};
-    const [bg, fg]= SC[stock.sector || '기타'] || SC['기타'];
-    const avgP    = d.buyQty ? Math.round(d.buyAmt / d.buyQty) : 0;
-    const pnlPct  = d.hasPnL && d.buyAmt ? ((d.pnl / d.buyAmt) * 100).toFixed(1) : null;
-    const sign    = d.pnl >= 0 ? '+' : '';
-    const cls     = d.hasPnL ? (d.pnl > 0 ? 'pnl-pos' : 'pnl-neg') : '';
+    const stock    = st.stocks.find(s => s.name === name) || {};
+    const [bg, fg] = SC[stock.sector || '기타'] || SC['기타'];
+    const avgP     = d.buyQty ? Math.round(d.buyAmt / d.buyQty) : 0;
+    const pnlPct   = d.hasPnL && d.buyAmt ? ((d.pnl / d.buyAmt) * 100).toFixed(1) : null;
+    const sign     = d.pnl >= 0 ? '+' : '';
+    const cls      = d.hasPnL ? (d.pnl > 0 ? 'pnl-pos' : 'pnl-neg') : '';
+    const acctText = d.accts.size ? [...d.accts].join(', ') : '—';
+
+    // 현재가 기반 평가 손익
+    const holdQty = Math.max(0, d.holdQty);
+    const curP    = curPrices[name] || 0;
+    let evalHTML  = '—';
+    let curHTML   = '—';
+    if (curP) {
+      curHTML = `₩${curP.toLocaleString()}`;
+      if (holdQty > 0) {
+        const evalPnL = (curP - avgP) * holdQty;
+        const ePct    = avgP ? ((curP - avgP) / avgP * 100).toFixed(1) : 0;
+        const eSign   = evalPnL >= 0 ? '+' : '';
+        const eCls    = evalPnL > 0 ? 'pnl-pos' : evalPnL < 0 ? 'pnl-neg' : '';
+        evalHTML = `<span class="${eCls}">${eSign}${Math.round(evalPnL).toLocaleString()}원<br><small>${eSign}${ePct}%</small></span>`;
+      }
+    }
+
     return `<tr>
-      <td><strong>${esc(name)}</strong></td>
+      <td><strong>${esc(name)}</strong>${holdQty > 0 ? `<br><small style="color:var(--text3);font-size:10px">${holdQty.toLocaleString()}주 보유</small>` : ''}</td>
       <td>
         <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;
           background:${bg};color:${fg}">${esc(stock.sector || '기타')}</span>
       </td>
+      <td style="font-size:11px;color:var(--text2);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(acctText)}">${esc(acctText)}</td>
       <td class="h-num">${d.buys}회</td>
       <td class="h-num">₩${d.buyAmt.toLocaleString()}</td>
       <td class="h-num">₩${avgP.toLocaleString()}</td>
+      <td class="h-num" style="color:var(--blue);font-weight:600">${curHTML}</td>
       <td class="h-num">${d.sells}회</td>
       <td class="h-num ${cls}">${d.hasPnL ? sign + Math.round(d.pnl).toLocaleString() + '원' : '—'}</td>
+      <td class="h-num">${evalHTML}</td>
       <td class="h-num ${cls}">${pnlPct !== null ? sign + pnlPct + '%' : '—'}</td>
     </tr>`;
   }).join('');
