@@ -914,9 +914,106 @@
       #api-url-input { min-width: unset; width: 100%; }
       .nav-tab { padding: 15px 12px; font-size: 12px; }
     }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       풋터 항상 화면 아래 고정
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    html, body { height: 100%; }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+    #main-content { flex: 1; }
+    footer#app-footer {
+      margin-top: auto;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      padding: 18px 20px;
+      text-align: center;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       섹터 관리 모달
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .btn-manage-sector {
+      background: none;
+      border: 1px dashed var(--border2);
+      color: var(--text3);
+      font-size: 11px; font-weight: 600;
+      padding: 5px 11px; border-radius: 100px;
+      cursor: pointer; font-family: inherit;
+      transition: all .15s; white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-manage-sector:hover {
+      border-color: var(--blue); color: var(--blue); background: var(--blue-dim);
+    }
+
+    /* 섹터 목록 행 */
+    .sector-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .sector-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 8px 12px;
+      transition: background .12s;
+    }
+    .sector-row:hover { background: var(--blue-dim); border-color: var(--blue-soft); }
+
+    .sector-color-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .sector-name-display { flex: 1; font-size: 13px; font-weight: 600; color: var(--text); }
+    .sector-count-badge {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 100px;
+      background: var(--surface); color: var(--text3);
+      border: 1px solid var(--border2); min-width: 28px; text-align: center;
+    }
+    .sector-edit-input {
+      flex: 1; background: #fff; border: 1px solid var(--blue);
+      color: var(--text); padding: 4px 8px;
+      border-radius: 6px; font-size: 13px; font-weight: 600;
+      font-family: inherit; outline: none;
+      box-shadow: 0 0 0 2px rgba(37,99,235,.12);
+    }
+
+    .btn-se {
+      background: none; border: 1px solid var(--border2);
+      color: var(--text3); font-size: 11px; padding: 4px 9px;
+      border-radius: 6px; cursor: pointer; font-family: inherit;
+      transition: all .13s; font-weight: 500; flex-shrink: 0;
+    }
+    .btn-se.edit:hover  { background: var(--blue-dim); color: var(--blue); border-color: var(--blue-soft); }
+    .btn-se.del:hover   { background: var(--red-dim);  color: var(--red);  border-color: #fecaca; }
+    .btn-se.ok:hover    { background: var(--green-dim);color: var(--green);border-color: var(--green-soft); }
+    .btn-se.cancel:hover{ background: var(--border);   color: var(--text2); }
+
+    /* 섹터 추가 행 */
+    .sector-add-row {
+      display: flex; gap: 8px; align-items: center;
+      background: var(--surface2); border: 1px dashed var(--border2);
+      border-radius: var(--r-sm); padding: 8px 12px;
+    }
+    .sector-add-row .fi {
+      flex: 1; padding: 6px 10px; font-size: 13px;
+    }
+
+    /* 섹터 컬러 팔레트 */
+    .color-palette {
+      display: flex; gap: 5px; flex-wrap: wrap; margin: 4px 0 10px;
+    }
+    .color-chip {
+      width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; transition: transform .12s, border-color .12s;
+      flex-shrink: 0;
+    }
+    .color-chip:hover  { transform: scale(1.15); }
+    .color-chip.active { border-color: var(--text); transform: scale(1.1); }
   </style>
 </head>
 <body>
+
+<div id="main-content">
 
 <!-- ── 초기 설정 배너 ── -->
 <div id="setup-banner">
@@ -987,6 +1084,7 @@
       <option value="매도완료">매도완료</option>
     </select>
     <button class="btn-add" onclick="openModal()">＋ 종목 추가</button>
+    <button class="btn-manage-sector" onclick="openSectorModal()" title="섹터 관리">⚙ 섹터 관리</button>
   </div>
 
   <!-- 종목 그리드 -->
@@ -1314,6 +1412,40 @@
 <!-- ── 토스트 ── -->
 <div id="toasts"></div>
 
+<!-- ══ 섹터 관리 모달 ══ -->
+<div id="modal-sector" class="overlay" onclick="overlaySectorClick(event)">
+  <div class="modal-box" style="max-width:440px">
+    <div class="m-head">
+      <span class="m-title">⚙ 섹터 관리</span>
+      <button class="m-close" onclick="closeSectorModal()">✕</button>
+    </div>
+    <div class="m-body">
+      <p style="font-size:12px;color:var(--text3);margin-bottom:14px;">
+        섹터 목록을 추가·수정·삭제할 수 있습니다. 삭제 시 해당 섹터의 종목은 <strong style="color:var(--amber)">기타</strong>로 변경됩니다.
+      </p>
+      <!-- 섹터 목록 -->
+      <div class="sector-list" id="sector-list-wrap"></div>
+
+      <!-- 새 섹터 추가 -->
+      <div class="sector-add-row">
+        <input id="new-sector-name" class="fi" type="text" placeholder="새 섹터명 입력" maxlength="10"
+          onkeydown="if(event.key==='Enter') addSector()">
+        <button class="btn-se ok" onclick="addSector()" style="padding:6px 14px;font-size:12px;">＋ 추가</button>
+      </div>
+
+      <!-- 색상 팔레트 -->
+      <div style="margin-top:12px;">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;">새 섹터 색상 선택</div>
+        <div class="color-palette" id="color-palette"></div>
+      </div>
+    </div>
+    <div class="m-foot">
+      <button class="btn-cancel" onclick="closeSectorModal()">닫기</button>
+      <button class="btn-save" onclick="saveSectors()">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ 거래 추가/편집 모달 ══ -->
 <div id="modal-trade" class="overlay" onclick="overlayTradeClick(event)">
   <div class="modal-box">
@@ -1405,8 +1537,10 @@
   </div>
 </div>
 
+</div><!-- /#main-content -->
+
 <!-- ── 풋터 ── -->
-<footer style="margin-top:48px;border-top:1px solid var(--border);background:var(--surface);padding:18px 20px;text-align:center;">
+<footer id="app-footer">
   <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3);letter-spacing:.4px;">
     © 2026 <strong style="color:var(--blue);font-weight:600;">sungce</strong> · StockNote
   </span>
@@ -1419,7 +1553,21 @@
 'use strict';
 
 /* ── 섹터 정의 ── */
-const SECTORS = ['AI인프라','반도체','로보틱스','전력기기','2차전지','바이오','방산','금융','기타'];
+/* ── 섹터 정의 (동적 관리) ── */
+const DEFAULT_SECTORS = ['AI인프라','반도체','로보틱스','전력기기','2차전지','바이오','방산','금융','기타'];
+const LS_SECTORS = 'sn_sectors';
+
+function getSectors() {
+  try {
+    const saved = localStorage.getItem(LS_SECTORS);
+    return saved ? JSON.parse(saved) : [...DEFAULT_SECTORS];
+  } catch { return [...DEFAULT_SECTORS]; }
+}
+function setSectorsStorage(arr) {
+  localStorage.setItem(LS_SECTORS, JSON.stringify(arr));
+}
+
+let SECTORS = getSectors();
 
 /* ════════════════════════════════════════════
    국내 주요 종목 DB (종목명 → [코드, 시장])
@@ -1534,7 +1682,7 @@ const STOCK_DB = [
   ['사피온','unk','KOSDAQ'],['퓨리오사AI','unk','KOSDAQ'],
   ['오픈엣지테크놀로지','394280','KOSDAQ'],
 ].filter(([,code]) => code !== 'unk' && code.length === 6);
-const SC = {   // 섹터 컬러 맵 (라이트 테마)
+let SC = {   // 섹터 컬러 맵 (라이트 테마)
   'AI인프라':  ['#eff6ff','#1d4ed8'],
   '반도체':    ['#f5f3ff','#5b21b6'],
   '로보틱스':  ['#ecfdf5','#065f46'],
@@ -1545,6 +1693,29 @@ const SC = {   // 섹터 컬러 맵 (라이트 테마)
   '금융':      ['#eef2ff','#3730a3'],
   '기타':      ['#f9fafb','#374151'],
 };
+
+// 팔레트 — bg/fg 쌍
+const SECTOR_PALETTE = [
+  ['#eff6ff','#1d4ed8'],['#f5f3ff','#5b21b6'],['#ecfdf5','#065f46'],
+  ['#fffbeb','#92400e'],['#fef2f2','#991b1b'],['#f0fdf4','#14532d'],
+  ['#fff7ed','#9a3412'],['#eef2ff','#3730a3'],['#fdf4ff','#7e22ce'],
+  ['#fef9c3','#713f12'],['#e0f2fe','#0c4a6e'],['#fee2e2','#7f1d1d'],
+  ['#d1fae5','#064e3b'],['#fce7f3','#9d174d'],['#e0e7ff','#312e81'],
+  ['#f1f5f9','#334155'],['#fafafa','#525252'],['#fff1f2','#881337'],
+];
+let selectedPaletteIdx = 0;
+
+const LS_SC = 'sn_sc';
+function loadSCStorage() {
+  try {
+    const saved = localStorage.getItem(LS_SC);
+    if (saved) SC = { ...SC, ...JSON.parse(saved) };
+  } catch {}
+}
+function saveSCStorage() {
+  localStorage.setItem(LS_SC, JSON.stringify(SC));
+}
+loadSCStorage();
 
 const LS_URL   = 'sn_api_url';
 const LS_DATA  = 'sn_stocks';
@@ -1895,8 +2066,9 @@ function updateStats() {
    MODAL
 ════════════════════════════════════════════ */
 function renderSectorOpts() {
-  document.getElementById('f-sector').innerHTML =
-    SECTORS.map(s => `<option value="${s}">${s}</option>`).join('');
+  // 종목 추가/편집 모달 섹터 선택
+  const sel = document.getElementById('f-sector');
+  if (sel) sel.innerHTML = SECTORS.map(s => `<option value="${s}">${s}</option>`).join('');
 }
 
 function renderStars() {
@@ -3103,6 +3275,173 @@ async function loadStocks() {
     '<div class="loading"><div class="spinner"></div><p>불러오는 중…</p></div>';
   st.stocks = await Store.getAll();
   render();
+}
+
+/* ════════════════════════════════════════════
+   섹터 관리 모달
+════════════════════════════════════════════ */
+let sectorEditing = null; // 현재 편집 중인 섹터명
+
+function openSectorModal() {
+  selectedPaletteIdx = 0;
+  renderSectorModalList();
+  renderColorPalette();
+  document.getElementById('new-sector-name').value = '';
+  document.getElementById('modal-sector').classList.add('open');
+}
+
+function closeSectorModal() {
+  document.getElementById('modal-sector').classList.remove('open');
+  sectorEditing = null;
+}
+
+function overlaySectorClick(e) {
+  if (e.target.id === 'modal-sector') closeSectorModal();
+}
+
+function renderSectorModalList() {
+  const wrap = document.getElementById('sector-list-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = SECTORS.map((s, i) => {
+    const [bg, fg] = SC[s] || SC['기타'];
+    const count = st.stocks.filter(st2 => (st2.sector || '기타') === s).length;
+    const isLocked = s === '기타'; // 기타는 삭제 불가
+
+    if (sectorEditing === s) {
+      return `<div class="sector-row" id="sector-row-${i}">
+        <span class="sector-color-dot" style="background:${fg}"></span>
+        <input class="sector-edit-input" id="sector-edit-inp-${i}" value="${esc(s)}"
+          onkeydown="if(event.key==='Enter')confirmEditSector(${i});if(event.key==='Escape')cancelEditSector()">
+        <button class="btn-se ok" onclick="confirmEditSector(${i})">✓</button>
+        <button class="btn-se cancel" onclick="cancelEditSector()">✕</button>
+      </div>`;
+    }
+
+    return `<div class="sector-row" id="sector-row-${i}">
+      <span class="sector-color-dot" style="background:${fg}"></span>
+      <span class="sector-name-display">${esc(s)}</span>
+      <span class="sector-count-badge">${count}개</span>
+      <button class="btn-se edit" onclick="startEditSector('${esc(s)}')">✏</button>
+      ${isLocked ? '' : `<button class="btn-se del" onclick="deleteSector('${esc(s)}')">✕</button>`}
+    </div>`;
+  }).join('');
+}
+
+function renderColorPalette() {
+  const wrap = document.getElementById('color-palette');
+  if (!wrap) return;
+  wrap.innerHTML = SECTOR_PALETTE.map(([bg, fg], i) =>
+    `<span class="color-chip ${i === selectedPaletteIdx ? 'active' : ''}"
+      style="background:${fg};border-color:${i===selectedPaletteIdx?'#111':'transparent'}"
+      onclick="selectPalette(${i})" title="${fg}"></span>`
+  ).join('');
+}
+
+function selectPalette(i) {
+  selectedPaletteIdx = i;
+  renderColorPalette();
+}
+
+function startEditSector(name) {
+  sectorEditing = name;
+  renderSectorModalList();
+  // 포커스
+  const idx = SECTORS.indexOf(name);
+  const inp = document.getElementById(`sector-edit-inp-${idx}`);
+  if (inp) { inp.focus(); inp.select(); }
+}
+
+function cancelEditSector() {
+  sectorEditing = null;
+  renderSectorModalList();
+}
+
+function confirmEditSector(idx) {
+  const inp = document.getElementById(`sector-edit-inp-${idx}`);
+  if (!inp) return;
+  const newName = inp.value.trim();
+  const oldName = SECTORS[idx];
+
+  if (!newName) { toast('섹터명을 입력해주세요', 'err'); return; }
+  if (newName !== oldName && SECTORS.includes(newName)) {
+    toast('이미 존재하는 섹터입니다', 'err'); return;
+  }
+
+  if (newName !== oldName) {
+    // SC 컬러 이전
+    SC[newName] = SC[oldName] || SC['기타'];
+    if (oldName !== '기타') delete SC[oldName];
+    // 종목 섹터 일괄 변경
+    st.stocks.forEach(s => { if (s.sector === oldName) s.sector = newName; });
+    // 로컬스토리지 종목 업데이트
+    try {
+      const list = JSON.parse(localStorage.getItem(LS_DATA) || '[]');
+      list.forEach(s => { if (s.sector === oldName) s.sector = newName; });
+      localStorage.setItem(LS_DATA, JSON.stringify(list));
+    } catch {}
+    SECTORS[idx] = newName;
+  }
+
+  sectorEditing = null;
+  renderSectorModalList();
+  toast(`"${oldName}" → "${newName}" 수정됨`, 'ok');
+}
+
+function deleteSector(name) {
+  if (name === '기타') { toast('"기타" 섹터는 삭제할 수 없습니다', 'err'); return; }
+  const count = st.stocks.filter(s => (s.sector || '기타') === name).length;
+  const msg = count > 0
+    ? `"${name}" 섹터를 삭제하면 ${count}개 종목이 "기타"로 변경됩니다. 계속하시겠습니까?`
+    : `"${name}" 섹터를 삭제하시겠습니까?`;
+  if (!confirm(msg)) return;
+
+  // 종목 섹터를 기타로
+  st.stocks.forEach(s => { if (s.sector === name) s.sector = '기타'; });
+  try {
+    const list = JSON.parse(localStorage.getItem(LS_DATA) || '[]');
+    list.forEach(s => { if (s.sector === name) s.sector = '기타'; });
+    localStorage.setItem(LS_DATA, JSON.stringify(list));
+  } catch {}
+
+  SECTORS.splice(SECTORS.indexOf(name), 1);
+  delete SC[name];
+
+  renderSectorModalList();
+  // 필터 pills / 모달 셀렉트 동기화
+  renderPills();
+  renderSectorOpts();
+  toast(`"${name}" 섹터 삭제됨`, 'info');
+}
+
+function addSector() {
+  const inp = document.getElementById('new-sector-name');
+  const name = inp.value.trim();
+  if (!name) { toast('섹터명을 입력해주세요', 'err'); return; }
+  if (SECTORS.includes(name)) { toast('이미 존재하는 섹터입니다', 'err'); return; }
+  if (name.length > 10) { toast('섹터명은 10자 이내로 입력해주세요', 'err'); return; }
+
+  const [bg, fg] = SECTOR_PALETTE[selectedPaletteIdx];
+  SC[name] = [bg, fg];
+
+  // 기타 앞에 삽입
+  const gIdx = SECTORS.indexOf('기타');
+  if (gIdx >= 0) SECTORS.splice(gIdx, 0, name);
+  else SECTORS.push(name);
+
+  inp.value = '';
+  renderSectorModalList();
+  renderColorPalette();
+  toast(`"${name}" 섹터 추가됨`, 'ok');
+}
+
+function saveSectors() {
+  setSectorsStorage(SECTORS);
+  saveSCStorage();
+  renderPills();
+  renderSectorOpts();
+  render();
+  closeSectorModal();
+  toast('섹터 설정이 저장되었습니다', 'ok');
 }
 
 function init() {
