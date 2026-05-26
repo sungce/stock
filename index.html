@@ -905,6 +905,50 @@
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        반응형
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    
+    /* ━━━━━━ 계좌 관리 CSS ━━━━━━ */
+    .acct-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0; align-items: center; }
+    .acct-tab { padding: 5px 14px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; user-select: none; border: 1px solid var(--border2); color: var(--text2); background: var(--surface); transition: all .15s; box-shadow: var(--shadow-sm); }
+    .acct-tab:hover  { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+    .acct-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,.3); }
+    .btn-manage-acct { background: none; border: 1px dashed var(--border2); color: var(--text3); font-size: 11px; font-weight: 600; padding: 5px 11px; border-radius: 100px; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
+    .btn-manage-acct:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+    .acct-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .acct-row { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 12px; }
+    .acct-name-display { flex: 1; font-size: 13px; font-weight: 600; }
+    .acct-trade-cnt { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 100px; background: var(--surface); color: var(--text3); border: 1px solid var(--border2); min-width: 28px; text-align: center; }
+    .acct-edit-input { flex: 1; background: #fff; border: 1px solid var(--blue); color: var(--text); padding: 4px 8px; border-radius: 6px; font-size: 13px; font-weight: 600; font-family: inherit; outline: none; }
+    .btn-ae { background: none; border: 1px solid var(--border2); color: var(--text3); font-size: 11px; padding: 4px 9px; border-radius: 6px; cursor: pointer; font-family: inherit; transition: all .13s; font-weight: 500; flex-shrink: 0; }
+    .btn-ae.edit:hover  { background: var(--blue-dim); color: var(--blue); border-color: var(--blue-soft); }
+    .btn-ae.del:hover   { background: var(--red-dim);  color: var(--red);  border-color: #fecaca; }
+    .btn-ae.ok:hover    { background: var(--green-dim);color: var(--green);border-color: var(--green-soft); }
+    .btn-ae.cancel:hover{ background: var(--border);   color: var(--text2); }
+    .acct-add-row { display: flex; gap: 8px; align-items: center; }
+    .acct-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: var(--purple); color: #fff; opacity: .85; }
+    .acct-section-header { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; }
+    .acct-section-title { font-size: 13px; font-weight: 700; color: var(--text2); }
+    .acct-section-pnl { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 100px; }
+    .acct-section-pnl.pos { background: var(--green-dim); color: var(--green); }
+    .acct-section-pnl.neg { background: var(--red-dim);   color: var(--red); }
+    .acct-section-pnl.zer { background: var(--surface2);  color: var(--text3); }
+    .acct-section-line { flex: 1; height: 1px; background: var(--border2); }
+
+    /* ━━━━━━ 계좌별 손익 & 현재가 CSS ━━━━━━ */
+    .acct-pnl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .acct-pnl-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
+    .acct-pnl-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--purple); }
+    .acct-pnl-label { font-size: 11px; color: var(--text3); font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+    .acct-pnl-val { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; }
+    .acct-pnl-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+    .curprice-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 18px 20px; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
+    .curprice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 12px; }
+    .curprice-row { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 7px 10px; }
+    .curprice-name { flex: 1; font-size: 12px; font-weight: 600; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .curprice-input { width: 90px; background: #fff; border: 1px solid var(--border2); color: var(--text); padding: 4px 7px; border-radius: 6px; font-size: 12px; font-family: 'JetBrains Mono', monospace; outline: none; transition: border-color .15s; text-align: right; }
+    .curprice-input:focus { border-color: var(--blue); }
+    .btn-refresh-price { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue-soft); padding: 5px 14px; border-radius: var(--r-sm); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+    .btn-refresh-price:hover { background: var(--blue); color: #fff; }
+    .eval-pos { color: var(--green); } .eval-neg { color: var(--red); }
     @media (max-width: 620px) {
       .form-grid { grid-template-columns: 1fr; }
       .stats-row { grid-template-columns: repeat(2,1fr); }
@@ -1188,6 +1232,10 @@
     <div class="stat-card">
       <div class="stat-label">실현 손익</div>
       <div class="stat-val"       id="as-pnl">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">평가 손익 (현재가)</div>
+      <div class="stat-val"       id="as-eval-pnl">-</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">승률</div>
@@ -2204,6 +2252,77 @@ function esc(s) {
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+
+/* ════════════════════════════════════════════
+   계좌 관리 — ACCOUNT MANAGEMENT
+════════════════════════════════════════════ */
+const LS_ACCOUNTS = 'sn_accounts';
+const LS_ACCT_SEL = 'sn_acct_selected';
+function getAccounts() { try { return JSON.parse(localStorage.getItem(LS_ACCOUNTS) || '[]'); } catch { return []; } }
+function setAccountsStorage(arr) { localStorage.setItem(LS_ACCOUNTS, JSON.stringify(arr)); }
+let acctList    = getAccounts();
+let acctEditing = null;
+let selectedAcct = localStorage.getItem(LS_ACCT_SEL) || '전체';
+
+function renderAcctTabs() {
+  const wrap = document.getElementById('acct-tabs'); if (!wrap) return;
+  const tabs = ['전체', ...acctList.map(a => a.name)];
+  wrap.innerHTML = tabs.map(name =>
+    `<button class="acct-tab ${selectedAcct === name ? 'active' : ''}" onclick="setAcctTab('${esc(name)}')">${esc(name)}</button>`
+  ).join('');
+}
+function setAcctTab(name) { selectedAcct = name; localStorage.setItem(LS_ACCT_SEL, name); renderAcctTabs(); renderJournal(); }
+function openAcctModal() { acctEditing = null; renderAcctModalList(); document.getElementById('new-acct-name').value = ''; document.getElementById('modal-acct').classList.add('open'); }
+function closeAcctModal() { document.getElementById('modal-acct').classList.remove('open'); acctEditing = null; }
+function renderAcctModalList() {
+  const wrap = document.getElementById('acct-list-wrap'); if (!wrap) return;
+  if (!acctList.length) { wrap.innerHTML = '<p style="font-size:12px;color:var(--text3);text-align:center;padding:14px 0;">등록된 계좌가 없습니다.</p>'; return; }
+  wrap.innerHTML = acctList.map((a, i) => {
+    const cnt = jt.trades.filter(t => t.acctName === a.name).length;
+    if (acctEditing === a.id) return `<div class="acct-row"><input class="acct-edit-input" id="acct-edit-inp-${i}" value="${esc(a.name)}" onkeydown="if(event.key==='Enter')confirmEditAcct('${a.id}',${i});if(event.key==='Escape')cancelEditAcct()"><button class="btn-ae ok" onclick="confirmEditAcct('${a.id}',${i})">✓</button><button class="btn-ae cancel" onclick="cancelEditAcct()">✕</button></div>`;
+    return `<div class="acct-row"><span style="font-size:16px">🏦</span><span class="acct-name-display">${esc(a.name)}</span><span class="acct-trade-cnt">${cnt}건</span><button class="btn-ae edit" onclick="startEditAcct('${a.id}')">✏</button><button class="btn-ae del" onclick="deleteAcct('${a.id}','${esc(a.name)}')">✕</button></div>`;
+  }).join('');
+}
+function startEditAcct(id) { acctEditing = id; renderAcctModalList(); const idx = acctList.findIndex(a => a.id === id); const inp = document.getElementById(`acct-edit-inp-${idx}`); if (inp) { inp.focus(); inp.select(); } }
+function cancelEditAcct() { acctEditing = null; renderAcctModalList(); }
+function confirmEditAcct(id, idx) {
+  const inp = document.getElementById(`acct-edit-inp-${idx}`); if (!inp) return;
+  const newName = inp.value.trim(); const a = acctList.find(x => x.id === id); if (!a) return; const oldName = a.name;
+  if (!newName) { toast('계좌명을 입력해주세요', 'err'); return; }
+  if (newName !== oldName && acctList.some(x => x.name === newName)) { toast('이미 존재하는 계좌명입니다', 'err'); return; }
+  a.name = newName;
+  jt.trades.forEach(t => { if (t.acctName === oldName) t.acctName = newName; });
+  try { const list = JSON.parse(localStorage.getItem('sn_trades') || '[]'); list.forEach(t => { if (t.acctName === oldName) t.acctName = newName; }); localStorage.setItem('sn_trades', JSON.stringify(list)); } catch {}
+  if (selectedAcct === oldName) { selectedAcct = newName; localStorage.setItem(LS_ACCT_SEL, newName); }
+  setAccountsStorage(acctList); acctEditing = null; renderAcctModalList(); renderAcctTabs();
+  toast(`"${oldName}" → "${newName}" 수정됨`, 'ok');
+}
+function deleteAcct(id, name) {
+  const cnt = jt.trades.filter(t => t.acctName === name).length;
+  if (!confirm(cnt > 0 ? `"${name}" 계좌를 삭제하면 ${cnt}건의 거래에서 계좌 정보가 제거됩니다. 계속하시겠습니까?` : `"${name}" 계좌를 삭제하시겠습니까?`)) return;
+  acctList = acctList.filter(a => a.id !== id);
+  jt.trades.forEach(t => { if (t.acctName === name) t.acctName = ''; });
+  try { const list = JSON.parse(localStorage.getItem('sn_trades') || '[]'); list.forEach(t => { if (t.acctName === name) t.acctName = ''; }); localStorage.setItem('sn_trades', JSON.stringify(list)); } catch {}
+  if (selectedAcct === name) { selectedAcct = '전체'; localStorage.setItem(LS_ACCT_SEL, '전체'); }
+  setAccountsStorage(acctList); renderAcctModalList(); renderAcctTabs(); toast(`"${name}" 계좌 삭제됨`, 'info');
+}
+function addAccount() {
+  const inp = document.getElementById('new-acct-name'); const name = inp.value.trim();
+  if (!name) { toast('계좌명을 입력해주세요', 'err'); return; }
+  if (acctList.some(a => a.name === name)) { toast('이미 존재하는 계좌명입니다', 'err'); return; }
+  const id = Date.now().toString(36) + Math.random().toString(36).substr(2,4);
+  acctList.push({ id, name }); setAccountsStorage(acctList);
+  inp.value = ''; renderAcctModalList(); renderAcctTabs(); refreshAcctSelect();
+  toast(`"${name}" 계좌 추가됨`, 'ok');
+}
+function saveAccounts() { setAccountsStorage(acctList); renderAcctTabs(); refreshAcctSelect(); closeAcctModal(); toast('계좌 설정이 저장되었습니다', 'ok'); }
+function refreshAcctSelect() {
+  const sel = document.getElementById('jf-acct'); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">계좌 선택…</option>' + acctList.map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
+  if (cur) sel.value = cur;
+}
+
 /* ════════════════════════════════════════════
    매매일지 — TRADE JOURNAL
 ════════════════════════════════════════════ */
@@ -2312,7 +2431,8 @@ function getFilteredTrades() {
       const bySt = !sf || t.stockName === sf;
       const byTy = !tf || t.type === tf;
       const byMo = !mf || (t.date || '').startsWith(mf);
-      return bySt && byTy && byMo;
+      const byAcc = (typeof selectedAcct === 'undefined' || selectedAcct === '전체') || (t.acctName || '') === selectedAcct;
+      return bySt && byTy && byMo && byAcc;
     })
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 }
@@ -2933,6 +3053,71 @@ async function delNote(id) {
 const chartInst = {};
 
 /* ── 초기화 (탭 클릭 시마다 재계산) ── */
+
+/* ════════════════════════════════════════════
+   계좌 & 현재가 (stats 페이지용)
+════════════════════════════════════════════ */
+const LS_CUR_PRICES = 'sn_cur_prices';
+let curPrices = (() => { try { return JSON.parse(localStorage.getItem(LS_CUR_PRICES)||'{}'); } catch { return {}; } })();
+function saveCurPrices() { localStorage.setItem(LS_CUR_PRICES, JSON.stringify(curPrices)); }
+function calcHoldings() {
+  const hold = {};
+  jt.trades.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(t => {
+    const n=t.stockName; if(!n) return;
+    if(!hold[n]) hold[n]={qty:0,buyAmt:0,accts:{}};
+    const qty=Number(t.quantity||0), price=Number(t.price||0);
+    if(t.type==='BUY'){ hold[n].qty+=qty; hold[n].buyAmt+=qty*price; const acct=t.acctName||'미지정'; hold[n].accts[acct]=(hold[n].accts[acct]||0)+qty; }
+    else { hold[n].qty-=qty; if(hold[n].qty<0) hold[n].qty=0; }
+  });
+  return hold;
+}
+function renderCurPriceInputs() {
+  const grid=document.getElementById('curprice-grid'); if(!grid) return;
+  const hold=calcHoldings(); const activeHold=Object.entries(hold).filter(([,d])=>d.qty>0);
+  if(!activeHold.length){grid.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0;">보유 중인 종목이 없습니다.</div>';return;}
+  grid.innerHTML=activeHold.map(([name])=>{
+    const cur=curPrices[name]||'';
+    return `<div class="curprice-row"><span class="curprice-name" title="${esc(name)}">${esc(name)}</span><input class="curprice-input" type="number" min="0" id="cp-${CSS.escape(name)}" value="${cur}" placeholder="현재가" onchange="curPrices['${esc(name).replace(/'/g,"\\'")}'] = Number(this.value)||0"></div>`;
+  }).join('');
+}
+function applyCurrentPrices() {
+  const hold=calcHoldings();
+  Object.keys(hold).filter(n=>hold[n].qty>0).forEach(name=>{const inp=document.getElementById('cp-'+CSS.escape(name));if(inp)curPrices[name]=Number(inp.value)||0;});
+  saveCurPrices(); renderStatsSummary(); renderAccountPnL(); renderHoldingsTable(); toast('현재가가 적용되었습니다','ok');
+}
+function renderAccountPnL() {
+  const grid=document.getElementById('acct-pnl-grid'); if(!grid) return;
+  const accounts = (typeof getAccounts==='function') ? getAccounts() : (typeof acctList!=='undefined' ? acctList : []);
+  if(!accounts.length){grid.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0;">계좌를 등록하면 계좌별 손익이 표시됩니다.</div>';return;}
+  const allAccts=[...accounts.map(a=>a.name),'미지정','전체'];
+  const acctData={}; allAccts.forEach(n=>{acctData[n]={realPnL:0,evalPnL:0,trades:0,hasPnL:false};});
+  jt.trades.forEach(t=>{
+    const acct=(t.acctName&&acctData[t.acctName])?t.acctName:'미지정';
+    acctData[acct].trades++; acctData['전체'].trades++;
+    if(t.type==='SELL'&&t.avgBuyPrice&&t.price){
+      const p=(Number(t.price)-Number(t.avgBuyPrice))*Number(t.quantity);
+      acctData[acct].realPnL+=p; acctData['전체'].realPnL+=p; acctData[acct].hasPnL=true; acctData['전체'].hasPnL=true;
+    }
+  });
+  const hold=calcHoldings();
+  Object.entries(hold).filter(([,d])=>d.qty>0).forEach(([name,d])=>{
+    const cur=curPrices[name]||0; if(!cur) return;
+    const avgBuy=d.qty>0?d.buyAmt/d.qty:0;
+    Object.entries(d.accts).forEach(([acct,qty])=>{
+      const key=acctData[acct]?acct:'미지정'; const ep=(cur-avgBuy)*qty;
+      acctData[key].evalPnL+=ep; acctData['전체'].evalPnL+=ep;
+    });
+  });
+  const cards=[...accounts.map(a=>a.name),'전체'];
+  grid.innerHTML=cards.map(name=>{
+    const d=acctData[name]; if(!d) return '';
+    const rSign=d.realPnL>=0?'+':''; const rCls=d.hasPnL?(d.realPnL>0?'green':d.realPnL<0?'red':''):'';
+    const eSign=d.evalPnL>=0?'+':''; const eCls=d.evalPnL>0?'eval-pos':d.evalPnL<0?'eval-neg':'';
+    const isTotal=name==='전체';
+    return `<div class="acct-pnl-card" style="${isTotal?'--purple:#059669':''}"><div class="acct-pnl-label">🏦 ${esc(name)} <span style="font-weight:400;color:var(--text3)">(${d.trades}건)</span></div><div class="acct-pnl-val" style="color:var(--${rCls||'text'});font-size:15px">실현 ${d.hasPnL?rSign+Math.round(d.realPnL).toLocaleString()+'원':'—'}</div>${curPrices&&Object.keys(curPrices).length?`<div class="acct-pnl-sub ${eCls}">평가 ${d.evalPnL!==0?eSign+Math.round(d.evalPnL).toLocaleString()+'원':'—'}</div>`:'<div class="acct-pnl-sub">현재가 입력 시 평가 손익 표시</div>'}</div>`;
+  }).join('');
+}
+
 async function initStats() {
   if (jt.trades.length === 0) await loadTrades();
   if (nt.notes.length  === 0) await loadNotes();
