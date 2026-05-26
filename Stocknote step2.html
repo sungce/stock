@@ -668,6 +668,51 @@
     .btn-refresh-price { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue-soft); padding: 5px 14px; border-radius: var(--r-sm); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
     .btn-refresh-price:hover { background: var(--blue); color: #fff; }
     .eval-pos { color: var(--green); } .eval-neg { color: var(--red); }
+    
+    /* ━━━━━━ 계좌별 통계 분석 CSS ━━━━━━ */
+    .acct-stat-tabs {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      margin-bottom: 16px; align-items: center;
+    }
+    .acct-stat-tab {
+      padding: 5px 16px; border-radius: 100px; font-size: 12px;
+      font-weight: 600; cursor: pointer; user-select: none;
+      border: 1px solid var(--border2); color: var(--text2);
+      background: var(--surface); transition: all .15s;
+      box-shadow: var(--shadow-sm);
+    }
+    .acct-stat-tab:hover  { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+    .acct-stat-tab.active {
+      background: var(--blue); border-color: var(--blue);
+      color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,.3);
+    }
+
+    /* 계좌별 통계 요약 카드 */
+    .acct-stat-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px; margin-bottom: 18px;
+    }
+    .acct-stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 12px 14px;
+      box-shadow: var(--shadow-sm);
+    }
+    .acct-stat-label { font-size: 10px; font-weight: 600; color: var(--text3); margin-bottom: 4px; letter-spacing: .3px; }
+    .acct-stat-val   { font-size: 16px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .acct-stat-val.pos { color: var(--green); }
+    .acct-stat-val.neg { color: var(--red); }
+    .acct-stat-val.blue{ color: var(--blue); }
+
+    /* 계좌별 월별 테이블 */
+    .acct-monthly-wrap { overflow-x: auto; }
+    .acct-monthly-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .acct-monthly-table th { background: var(--surface2); color: var(--text3); font-weight: 600; padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .acct-monthly-table td { padding: 7px 12px; border-bottom: 1px solid var(--border2); vertical-align: middle; }
+    .acct-monthly-table tr:last-child td { border-bottom: none; }
+    .acct-monthly-table tr:hover td { background: var(--surface2); }
+    .acct-monthly-table .num { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
     @media (max-width: 620px) {
       .form-grid { grid-template-columns: 1fr; }
       .stats-row { grid-template-columns: repeat(2,1fr); }
@@ -961,6 +1006,60 @@
     </div>
     <div class="curprice-grid" id="curprice-grid">
       <div style="color:var(--text3);font-size:12px;padding:8px 0;">보유 중인 종목이 없습니다.</div>
+    </div>
+  </div>
+
+
+  <!-- ── 계좌별 통계 분석 ── -->
+  <div class="stats-section" id="acct-stat-section" style="margin-bottom:20px">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span>📊 계좌별 통계 분석</span>
+      <span style="font-size:11px;color:var(--text3);font-weight:400;">계좌 탭을 선택해 해당 계좌만 분석합니다</span>
+    </div>
+
+    <!-- 계좌 탭 -->
+    <div class="acct-stat-tabs" id="acct-stat-tabs" style="margin-top:12px;"></div>
+
+    <!-- 요약 카드 -->
+    <div class="acct-stat-summary" id="acct-stat-summary"></div>
+
+    <!-- 종목별 테이블 -->
+    <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;" id="acct-stat-table-title">📋 종목별 거래 현황</div>
+    <div class="acct-monthly-wrap">
+      <table class="acct-monthly-table">
+        <thead>
+          <tr>
+            <th>종목</th>
+            <th class="num">매수 횟수</th>
+            <th class="num">매도 횟수</th>
+            <th class="num">매수 총액</th>
+            <th class="num">평균 매수가</th>
+            <th class="num">현재가</th>
+            <th class="num">보유 수량</th>
+            <th class="num">실현 손익</th>
+            <th class="num">평가 손익</th>
+            <th class="num">수익률</th>
+          </tr>
+        </thead>
+        <tbody id="acct-stat-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- 월별 손익 테이블 -->
+    <div style="font-size:12px;font-weight:600;color:var(--text2);margin:16px 0 8px;" id="acct-monthly-title">📅 월별 실현 손익</div>
+    <div class="acct-monthly-wrap">
+      <table class="acct-monthly-table">
+        <thead>
+          <tr>
+            <th>월</th>
+            <th class="num">매수</th>
+            <th class="num">매도</th>
+            <th class="num">실현 손익</th>
+            <th class="num">승률</th>
+          </tr>
+        </thead>
+        <tbody id="acct-monthly-tbody"></tbody>
+      </table>
     </div>
   </div>
 
@@ -2330,29 +2429,36 @@ function saveCurPrices() {
 }
 
 /* ── 보유 종목 계산 (매수 - 매도 잔량) ── */
-function calcHoldings() {
-  // { stockName: { qty, avgBuy, accts:{acctName:qty} } }
+function calcHoldings(filterAcct) {
+  // filterAcct: undefined=전체, 문자열=특정계좌
+  // { stockName: { qty, buyAmt, totalBuyQty, avgBuy, accts:{acctName:qty} } }
   const hold = {};
   jt.trades
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
     .forEach(t => {
       const n = t.stockName; if (!n) return;
-      if (!hold[n]) hold[n] = { qty: 0, buyAmt: 0, accts: {} };
-      const qty = Number(t.quantity || 0);
-      const price = Number(t.price || 0);
+      // 계좌 필터
+      if (filterAcct) {
+        const ta = t.acctName || '미지정';
+        if (filterAcct === '미지정' ? ta !== '미지정' : ta !== filterAcct) return;
+      }
+      if (!hold[n]) hold[n] = { qty: 0, buyAmt: 0, totalBuyQty: 0, accts: {} };
+      const qty   = Number(t.quantity || 0);
+      const price = Number(t.price    || 0);
       if (t.type === 'BUY') {
-        hold[n].qty    += qty;
-        hold[n].buyAmt += qty * price;
+        hold[n].qty          += qty;
+        hold[n].buyAmt       += qty * price;
+        hold[n].totalBuyQty  += qty;
         const acct = t.acctName || '미지정';
-        hold[n].accts[acct] = (hold[n].accts[acct] || 0) + qty;
+        hold[n].accts[acct]  = (hold[n].accts[acct] || 0) + qty;
       } else {
-        hold[n].qty    -= qty;
+        hold[n].qty -= qty;
         if (hold[n].qty < 0) hold[n].qty = 0;
       }
     });
-  // avgBuy
+  // avgBuy: 총 매수금액 / 총 매수수량 (매도와 무관)
   Object.values(hold).forEach(h => {
-    h.avgBuy = h.qty > 0 ? h.buyAmt / (h.qty + /* sold */ 0) : 0;
+    h.avgBuy = h.totalBuyQty > 0 ? h.buyAmt / h.totalBuyQty : 0;
   });
   return hold;
 }
@@ -2364,34 +2470,71 @@ function renderCurPriceInputs() {
   const hold = calcHoldings();
   const activeHold = Object.entries(hold).filter(([, d]) => d.qty > 0);
   if (!activeHold.length) {
-    grid.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0;">보유 중인 종목이 없습니다.</div>';
+    grid.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0;">보유 종목이 없습니다. 거래 기록에서 매수 수량이 남아 있는 종목이 표시됩니다.</div>';
     return;
   }
-  grid.innerHTML = activeHold.map(([name]) => {
-    const cur = curPrices[name] || '';
-    return `<div class="curprice-row">
-      <span class="curprice-name" title="${esc(name)}">${esc(name)}</span>
+  grid.innerHTML = activeHold.map(([name, d]) => {
+    const cur    = curPrices[name] || '';
+    const avgBuy = d.avgBuy || 0;
+    const safeId = name.replace(/[^a-zA-Z0-9가-힣]/g, '_');
+    let evalHtml = '';
+    if (cur && avgBuy) {
+      const ev   = (Number(cur) - avgBuy) * d.qty;
+      const sign = ev >= 0 ? '+' : '';
+      const pct  = ((Number(cur) - avgBuy) / avgBuy * 100).toFixed(1);
+      const cls  = ev > 0 ? 'color:var(--green)' : ev < 0 ? 'color:var(--red)' : '';
+      evalHtml = `<span style="font-size:10px;${cls};font-weight:600;font-family:monospace;white-space:nowrap;">${sign}${Math.round(ev).toLocaleString()}원(${sign}${pct}%)</span>`;
+    }
+    return `<div class="curprice-row" style="flex-wrap:wrap;gap:4px;">
+      <span class="curprice-name" title="${esc(name)}" style="min-width:80px;">${esc(name)}</span>
       <input class="curprice-input" type="number" min="0"
-        id="cp-${CSS.escape(name)}"
+        id="cp_${safeId}"
+        data-stock="${esc(name)}"
         value="${cur}"
         placeholder="현재가"
-        onchange="curPrices['${esc(name).replace(/'/g,"\\'")}'] = Number(this.value)||0">
+        oninput="onCurPriceInput(this)">
+      ${evalHtml}
     </div>`;
   }).join('');
 }
 
+function onCurPriceInput(el) {
+  const name = el.dataset.stock;
+  const val  = Number(el.value) || 0;
+  curPrices[name] = val;
+  // 즉시 평가손익 미리보기 업데이트
+  const hold = calcHoldings();
+  const d    = hold[name];
+  if (!d) return;
+  const row = el.parentElement;
+  let span = row.querySelector('span[data-eval]');
+  if (!span) { span = document.createElement('span'); span.dataset.eval='1'; row.appendChild(span); }
+  if (val && d.avgBuy) {
+    const ev   = (val - d.avgBuy) * d.qty;
+    const sign = ev >= 0 ? '+' : '';
+    const pct  = ((val - d.avgBuy) / d.avgBuy * 100).toFixed(1);
+    span.style.cssText = `font-size:10px;font-weight:600;font-family:monospace;white-space:nowrap;color:${ev>0?'var(--green)':ev<0?'var(--red)':'var(--text3)'}`;
+    span.textContent   = `${sign}${Math.round(ev).toLocaleString()}원(${sign}${pct}%)`;
+  } else {
+    span.textContent = '';
+  }
+}
+
 function applyCurrentPrices() {
-  // 입력값 수집
+  // 입력값 수집 (safeId 방식 + data-stock 방식 모두 지원)
   const hold = calcHoldings();
   Object.keys(hold).filter(n => hold[n].qty > 0).forEach(name => {
-    const inp = document.getElementById('cp-' + CSS.escape(name));
+    const safeId = name.replace(/[^a-zA-Z0-9가-힣]/g, '_');
+    const inp = document.getElementById('cp_' + safeId)
+             || document.querySelector(`input[data-stock="${CSS.escape ? CSS.escape(name) : name}"]`);
     if (inp) curPrices[name] = Number(inp.value) || 0;
   });
   saveCurPrices();
   renderStatsSummary();
   renderAccountPnL();
   renderHoldingsTable();
-  toast('현재가가 적용되었습니다', 'ok');
+  renderAcctStatSection(currentStatAcct);
+  toast('현재가가 적용되었습니다 ✓', 'ok');
 }
 
 /* ── 계좌별 실현 손익 카드 ── */
@@ -2459,6 +2602,122 @@ function renderAccountPnL() {
   }).join('');
 }
 
+
+/* ════════════════════════════════════════════
+   계좌별 통계 분석 — ACCOUNT STATS
+════════════════════════════════════════════ */
+let currentStatAcct = '전체';
+
+function renderAcctStatTabs() {
+  const wrap = document.getElementById('acct-stat-tabs');
+  if (!wrap) return;
+  const accounts = typeof acctList !== 'undefined' ? acctList : [];
+  const tabs = ['전체', ...accounts.map(a => a.name)];
+  if (accounts.length === 0) {
+    wrap.innerHTML = '<span style="font-size:12px;color:var(--text3);">계좌를 등록하면 계좌별 통계를 볼 수 있습니다.</span>';
+    return;
+  }
+  wrap.innerHTML = tabs.map(name =>
+    `<button class="acct-stat-tab ${name === currentStatAcct ? 'active' : ''}"
+      onclick="switchStatAcct('${esc(name)}')">${esc(name)}</button>`
+  ).join('');
+}
+
+function switchStatAcct(name) {
+  currentStatAcct = name;
+  renderAcctStatTabs();
+  renderAcctStatSection(name);
+}
+
+function renderAcctStatSection(acctName) {
+  const filterAcct = acctName === '전체' ? undefined : acctName;
+  const trades = jt.trades.filter(t =>
+    !filterAcct ? true : (t.acctName || '미지정') === filterAcct
+  );
+
+  // ── 1) 요약 카드 ──────────────────────────────
+  const sells  = trades.filter(t => t.type === 'SELL' && t.avgBuyPrice && t.price);
+  let realPnL = 0, wins = 0;
+  sells.forEach(t => {
+    const p = (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
+    realPnL += p; if (p > 0) wins++;
+  });
+  const wr   = sells.length ? ((wins / sells.length) * 100).toFixed(1) + '%' : '—';
+  const buys = trades.filter(t => t.type === 'BUY');
+
+  const hold = calcHoldings(filterAcct);
+  let evalPnL = 0, hasEval = false;
+  Object.entries(hold).filter(([, d]) => d.qty > 0).forEach(([name, d]) => {
+    const cur = curPrices[name] || 0; if (!cur) return;
+    evalPnL += (cur - d.avgBuy) * d.qty; hasEval = true;
+  });
+
+  const rSign = realPnL >= 0 ? '+' : '';
+  const eSign = evalPnL >= 0 ? '+' : '';
+  const summaryEl = document.getElementById('acct-stat-summary');
+  if (summaryEl) {
+    summaryEl.innerHTML = [
+      { label:'총 거래',            val: trades.length+'건', cls:'blue' },
+      { label:'매수',               val: buys.length+'건',   cls:'' },
+      { label:'매도',               val: sells.length+'건',  cls:'' },
+      { label:'승률',               val: wr,                 cls:'' },
+      { label:'실현 손익',
+        val:  sells.length ? rSign+Math.round(realPnL).toLocaleString()+'원' : '—',
+        cls:  sells.length ? (realPnL>0?'pos':realPnL<0?'neg':'') : '' },
+      { label:'평가 손익 (현재가)',
+        val:  hasEval ? eSign+Math.round(evalPnL).toLocaleString()+'원' : '현재가 미입력',
+        cls:  hasEval ? (evalPnL>0?'pos':evalPnL<0?'neg':'') : '' },
+    ].map(({label,val,cls}) =>
+      `<div class="acct-stat-card"><div class="acct-stat-label">${label}</div><div class="acct-stat-val ${cls}">${val}</div></div>`
+    ).join('');
+  }
+
+  // ── 2) 종목별 테이블 ──────────────────────────
+  const titleEl = document.getElementById('acct-stat-table-title');
+  if (titleEl) titleEl.textContent = '📋 종목별 거래 현황 ' + (acctName !== '전체' ? '— ' + acctName : '(전체)');
+
+  const stockMap = {};
+  trades.forEach(t => {
+    const n=t.stockName; if(!n) return;
+    if(!stockMap[n]) stockMap[n]={buys:0,sells:0,buyAmt:0,buyQty:0,realPnL:0,hasPnL:false};
+    const qty=Number(t.quantity||0), price=Number(t.price||0);
+    if(t.type==='BUY'){stockMap[n].buys++;stockMap[n].buyAmt+=qty*price;stockMap[n].buyQty+=qty;}
+    else{stockMap[n].sells++;if(t.avgBuyPrice&&t.price){stockMap[n].realPnL+=(price-Number(t.avgBuyPrice))*qty;stockMap[n].hasPnL=true;}}
+  });
+  const tbody=document.getElementById('acct-stat-tbody');
+  if(tbody){
+    const rows=Object.entries(stockMap);
+    if(!rows.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:20px;">거래 기록이 없습니다.</td></tr>';}
+    else{tbody.innerHTML=rows.sort((a,b)=>b[1].buyAmt-a[1].buyAmt).map(([name,d])=>{
+      const avgP=d.buyQty?Math.round(d.buyAmt/d.buyQty):0;
+      const hd=hold[name]||{qty:0,avgBuy:0};
+      const curP=curPrices[name]||0;
+      const pSign=d.realPnL>=0?'+':''; const pCls=d.hasPnL?(d.realPnL>0?'pnl-pos':d.realPnL<0?'pnl-neg':''):'';
+      const pct=d.hasPnL&&d.buyAmt?((d.realPnL/d.buyAmt)*100).toFixed(1):null;
+      let evalHtml='—';
+      if(curP&&hd.qty>0){const ev=(curP-hd.avgBuy)*hd.qty;const es=ev>=0?'+':'';const ec=ev>0?'pnl-pos':ev<0?'pnl-neg':'';const ep=hd.avgBuy?((curP-hd.avgBuy)/hd.avgBuy*100).toFixed(1):'0';evalHtml=`<span class="${ec}">${es}${Math.round(ev).toLocaleString()}원<br><small>${es}${ep}%</small></span>`;}
+      return `<tr><td><strong>${esc(name)}</strong></td><td class="num">${d.buys}회</td><td class="num">${d.sells}회</td><td class="num">₩${d.buyAmt.toLocaleString()}</td><td class="num">₩${avgP.toLocaleString()}</td><td class="num" style="color:var(--blue);font-weight:600">${curP?'₩'+curP.toLocaleString():'—'}</td><td class="num">${hd.qty>0?hd.qty.toLocaleString()+'주':'—'}</td><td class="num ${pCls}">${d.hasPnL?pSign+Math.round(d.realPnL).toLocaleString()+'원':'—'}</td><td class="num">${evalHtml}</td><td class="num ${pCls}">${pct!==null?(d.realPnL>=0?'+':'')+pct+'%':'—'}</td></tr>`;
+    }).join('');}
+  }
+
+  // ── 3) 월별 손익 테이블 ───────────────────────
+  const mTitle=document.getElementById('acct-monthly-title');
+  if(mTitle) mTitle.textContent='📅 월별 실현 손익 '+(acctName!=='전체'?'— '+acctName:'(전체)');
+  const monthly={};
+  trades.forEach(t=>{
+    const mo=(t.date||'').slice(0,7);if(!mo)return;
+    if(!monthly[mo]) monthly[mo]={buys:0,sells:0,pnl:0,wins:0,hasPnL:false};
+    if(t.type==='BUY') monthly[mo].buys++;
+    else{monthly[mo].sells++;if(t.avgBuyPrice&&t.price){const p=(Number(t.price)-Number(t.avgBuyPrice))*Number(t.quantity);monthly[mo].pnl+=p;if(p>0)monthly[mo].wins++;monthly[mo].hasPnL=true;}}
+  });
+  const mTbody=document.getElementById('acct-monthly-tbody');
+  if(mTbody){
+    const moRows=Object.entries(monthly).sort((a,b)=>b[0].localeCompare(a[0]));
+    if(!moRows.length){mTbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:16px;">거래 기록이 없습니다.</td></tr>';}
+    else{mTbody.innerHTML=moRows.map(([mo,d])=>{const ps=d.pnl>=0?'+':'';const pc=d.hasPnL?(d.pnl>0?'pnl-pos':d.pnl<0?'pnl-neg':''):'';const wr=d.sells?((d.wins/d.sells)*100).toFixed(0)+'%':'—';return `<tr><td><strong>${mo}</strong></td><td class="num">${d.buys}건</td><td class="num">${d.sells}건</td><td class="num ${pc}">${d.hasPnL?ps+Math.round(d.pnl).toLocaleString()+'원':'—'}</td><td class="num">${wr}</td></tr>`;}).join('');}
+  }
+}
+
 async function initStats() {
   if (jt.trades.length === 0) await loadTrades();
   setChartDefaults();
@@ -2471,6 +2730,10 @@ async function initStats() {
   renderHoldingsTable();
   renderAccountPnL();
   renderCurPriceInputs();
+  // 계좌별 통계
+  currentStatAcct = '전체';
+  renderAcctStatTabs();
+  renderAcctStatSection('전체');
 }
 
 function setChartDefaults() {
