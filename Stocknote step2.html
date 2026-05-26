@@ -713,6 +713,134 @@
     .acct-monthly-table tr:hover td { background: var(--surface2); }
     .acct-monthly-table .num { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
 
+    
+    /* ━━━━━━ 리스트 뷰 (관심종목) ━━━━━━ */
+    #stocks-grid.list-view {
+      display: flex; flex-direction: column; gap: 0;
+    }
+    #stocks-grid.list-view .s-card {
+      border-radius: 0; border-bottom: none;
+      box-shadow: none; transform: none !important;
+    }
+    #stocks-grid.list-view .s-card:first-child { border-radius: var(--r) var(--r) 0 0; }
+    #stocks-grid.list-view .s-card:last-child  { border-radius: 0 0 var(--r) var(--r); border-bottom: 1px solid var(--border); }
+    #stocks-grid.list-view .s-card:only-child  { border-radius: var(--r); border-bottom: 1px solid var(--border); }
+
+    .s-list-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; min-height: 52px;
+    }
+    .s-list-row:hover { background: var(--surface2); }
+
+    .s-list-name {
+      font-size: 13px; font-weight: 700; color: var(--text);
+      min-width: 90px; flex-shrink: 0;
+    }
+    .s-list-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: var(--text3);
+      min-width: 52px; flex-shrink: 0;
+    }
+    .s-list-badges { display: flex; gap: 5px; align-items: center; flex-shrink: 0; }
+    .s-list-stars  { font-size: 11px; color: #f59e0b; letter-spacing: .5px; flex-shrink: 0; }
+    .s-list-prices {
+      display: flex; gap: 14px; flex: 1; min-width: 0;
+    }
+    .s-list-price-item { display: flex; align-items: center; gap: 4px; }
+    .s-list-price-lbl  { font-size: 10px; color: var(--text3); white-space: nowrap; }
+    .s-list-price-val  {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; font-weight: 600;
+    }
+    .s-list-price-val.t { color: var(--green); }
+    .s-list-price-val.s { color: var(--red); }
+    .s-list-tags { display: flex; gap: 3px; flex-wrap: wrap; flex: 1; min-width: 0; }
+    .s-list-memo {
+      font-size: 11px; color: var(--text3);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      flex: 1; min-width: 0; max-width: 220px;
+    }
+    .s-list-actions { display: flex; gap: 5px; flex-shrink: 0; margin-left: auto; }
+
+    /* 뷰 토글 버튼 */
+    .view-toggle {
+      display: flex; border: 1px solid var(--border2);
+      border-radius: var(--r-sm); overflow: hidden;
+      flex-shrink: 0;
+    }
+    .view-btn {
+      background: var(--surface2); border: none;
+      color: var(--text3); font-size: 14px;
+      padding: 5px 10px; cursor: pointer;
+      transition: all .13s; line-height: 1;
+    }
+    .view-btn:hover { background: var(--border); color: var(--text2); }
+    .view-btn.active { background: var(--blue); color: #fff; }
+
+    /* ━━━━━━ 리스트 뷰 (매매일지) ━━━━━━ */
+    #trades-list.list-view .trade-card { margin-bottom: 0; border-radius: 0; border-bottom: none; transform: none !important; }
+    #trades-list.list-view .trade-card:first-child,
+    #trades-list.list-view .acct-section-header + .trade-card { border-radius: var(--r) var(--r) 0 0; }
+    #trades-list.list-view .trade-card:last-child { border-radius: 0 0 var(--r) var(--r); border-bottom: 1px solid var(--border); }
+    #trades-list.list-view .trade-card:only-child { border-radius: var(--r); border-bottom: 1px solid var(--border); }
+
+    .trade-list-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px; min-height: 48px;
+    }
+    .trade-list-row:hover { background: var(--surface2); }
+
+    .trade-list-type {
+      font-size: 10px; font-weight: 700;
+      padding: 3px 8px; border-radius: 5px;
+      min-width: 36px; text-align: center; flex-shrink: 0;
+    }
+    .trade-list-type.BUY  { background: var(--green-dim); color: var(--green); border: 1px solid var(--green-soft); }
+    .trade-list-type.SELL { background: var(--red-dim);   color: var(--red);   border: 1px solid #fecaca; }
+
+    .trade-list-stock {
+      font-size: 13px; font-weight: 700; min-width: 80px; flex-shrink: 0;
+    }
+    .trade-list-date {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: var(--text3); min-width: 82px; flex-shrink: 0;
+    }
+    .trade-list-price {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; min-width: 80px; flex-shrink: 0;
+    }
+    .trade-list-qty {
+      font-size: 11px; color: var(--text2); min-width: 50px; flex-shrink: 0;
+    }
+    .trade-list-total {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--text2); min-width: 90px; flex-shrink: 0;
+    }
+    .trade-list-pnl {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; font-weight: 700; min-width: 110px; flex-shrink: 0;
+    }
+    .trade-list-pnl.pos { color: var(--green); }
+    .trade-list-pnl.neg { color: var(--red); }
+    .trade-list-acct {
+      font-size: 10px; color: var(--text3); flex-shrink: 0;
+      background: var(--surface2); border: 1px solid var(--border2);
+      padding: 1px 7px; border-radius: 4px;
+    }
+    .trade-list-chips { display: flex; gap: 4px; flex: 1; min-width: 0; }
+    .trade-list-actions { display: flex; gap: 5px; flex-shrink: 0; margin-left: auto; }
+
+    /* 리스트 뷰 헤더 행 */
+    .list-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 14px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--r) var(--r) 0 0;
+      border-bottom: none;
+      font-size: 10px; font-weight: 600; color: var(--text3);
+      letter-spacing: .3px;
+    }
+
     @media (max-width: 620px) {
       .form-grid { grid-template-columns: 1fr; }
       .stats-row { grid-template-columns: repeat(2,1fr); }
@@ -942,6 +1070,10 @@
     </select>
     <div style="flex:1"></div>
     <button class="btn-add" onclick="openTradeModal()">＋ 거래 추가</button>
+    <div class="view-toggle" title="보기 방식">
+      <button class="view-btn active" id="jvbtn-list" onclick="setTradeView('list')" title="리스트 보기">☰</button>
+      <button class="view-btn"        id="jvbtn-card" onclick="setTradeView('card')" title="카드 보기">⊞</button>
+    </div>
   </div>
 
   <!-- 거래 목록 -->
@@ -1629,9 +1761,17 @@ function getFiltered() {
 }
 
 function render() {
-  const grid   = document.getElementById('stocks-grid');
-  const filt   = getFiltered();
+  const grid = document.getElementById('stocks-grid');
+  const filt = getFiltered();
   updateStats();
+
+  // 뷰 모드 동기화
+  if (stockViewMode === 'list') { grid.classList.add('list-view'); }
+  else                          { grid.classList.remove('list-view'); }
+  const btnL = document.getElementById('vbtn-list');
+  const btnG = document.getElementById('vbtn-grid');
+  if (btnL) btnL.classList.toggle('active', stockViewMode === 'list');
+  if (btnG) btnG.classList.toggle('active', stockViewMode === 'grid');
 
   if (!filt.length) {
     grid.innerHTML = `<div class="empty">
@@ -1642,7 +1782,20 @@ function render() {
     return;
   }
 
-  grid.innerHTML = filt.map(cardHTML).join('');
+  if (stockViewMode === 'list') {
+    // 리스트 헤더 + 행
+    const header = `<div class="list-header">
+      <span style="min-width:90px;flex-shrink:0;">종목명</span>
+      <span style="min-width:52px;flex-shrink:0;">코드</span>
+      <span style="min-width:100px;flex-shrink:0;">섹터 / 상태</span>
+      <span style="min-width:70px;flex-shrink:0;">별점</span>
+      <span style="flex:1;">목표가 / 손절가</span>
+      <span style="flex:1;">메모</span>
+    </div>`;
+    grid.innerHTML = header + filt.map(stockListRowHTML).join('');
+  } else {
+    grid.innerHTML = filt.map(cardHTML).join('');
+  }
 }
 
 function cardHTML(s) {
@@ -2124,44 +2277,44 @@ function renderJournal() {
     return;
   }
 
-  // 계좌별 그룹핑
-  if (selectedAcct === '전체' && acctList.length > 0) {
-    // 등록 계좌 + 미지정 순으로 그룹
-    const groups = {};
-    acctList.forEach(a => { groups[a.name] = []; });
-    groups['미지정'] = [];
+  // 뷰 모드 동기화
+  if (tradeViewMode === 'list') { list.classList.add('list-view'); }
+  else                          { list.classList.remove('list-view'); }
+  const jbtnL = document.getElementById('jvbtn-list');
+  const jbtnC = document.getElementById('jvbtn-card');
+  if (jbtnL) jbtnL.classList.toggle('active', tradeViewMode === 'list');
+  if (jbtnC) jbtnC.classList.toggle('active', tradeViewMode === 'card');
+  const rowFn = tradeViewMode === 'list' ? tradeListRowHTML : tradeCardHTML;
+
+  // 계좌별 그룹 렌더 (전체 탭이고 계좌가 있을 때)
+  if (typeof selectedAcct !== 'undefined' && selectedAcct === '전체' &&
+      typeof acctList !== 'undefined' && acctList.length > 0) {
+    const groups = {}; acctList.forEach(a => { groups[a.name] = []; }); groups['미지정'] = [];
     filt.forEach(t => {
       const key = (t.acctName && groups[t.acctName] !== undefined) ? t.acctName : '미지정';
       groups[key].push(t);
     });
-
     let html = '';
-    const allGroups = [...acctList.map(a => a.name), '미지정'];
-    allGroups.forEach(gName => {
-      const trades = groups[gName];
-      if (!trades || !trades.length) return;
-      // 계좌 내 손익 합산
+    [...acctList.map(a => a.name), '미지정'].forEach(gName => {
+      const trades = groups[gName]; if (!trades || !trades.length) return;
       let pnl = 0, hasPnL = false;
       trades.forEach(t => { const r = calcPnL(t); if (r) { pnl += r.pnl; hasPnL = true; } });
       const sign = pnl >= 0 ? '+' : '';
       const cls  = hasPnL ? (pnl > 0 ? 'pos' : pnl < 0 ? 'neg' : 'zer') : 'zer';
-      const pnlText = hasPnL ? `${sign}${Math.round(pnl).toLocaleString()}원` : '손익 없음';
       html += `<div class="acct-section-header">
         <span style="font-size:16px">🏦</span>
         <span class="acct-section-title">${esc(gName)}</span>
-        <span class="acct-section-pnl ${cls}">${pnlText}</span>
+        <span class="acct-section-pnl ${cls}">${hasPnL ? sign+Math.round(pnl).toLocaleString()+'원' : '손익 없음'}</span>
         <div class="acct-section-line"></div>
         <span style="font-size:11px;color:var(--text3)">${trades.length}건</span>
       </div>`;
-      html += trades.map(tradeCardHTML).join('');
+      html += trades.map(rowFn).join('');
     });
     list.innerHTML = html;
   } else {
-    list.innerHTML = filt.map(tradeCardHTML).join('');
+    list.innerHTML = filt.map(rowFn).join('');
   }
 }
-
-/* ── 수익률 계산 ── */
 function calcPnL(t) {
   if (t.type !== 'SELL' || !t.avgBuyPrice || !t.price || !t.quantity) return null;
   const pnl = (Number(t.price) - Number(t.avgBuyPrice)) * Number(t.quantity);
@@ -3132,6 +3285,117 @@ async function loadStocks() {
   render();
 }
 
+/* ════════════════════════════════════════════
+   뷰 모드 — LIST / GRID
+════════════════════════════════════════════ */
+const LS_STOCK_VIEW = 'sn_stock_view';
+const LS_TRADE_VIEW = 'sn_trade_view';
+let stockViewMode = localStorage.getItem(LS_STOCK_VIEW) || 'list';
+let tradeViewMode = localStorage.getItem(LS_TRADE_VIEW) || 'list';
+
+function setStockView(mode) {
+  stockViewMode = mode;
+  localStorage.setItem(LS_STOCK_VIEW, mode);
+  const grid  = document.getElementById('stocks-grid');
+  const btnL  = document.getElementById('vbtn-list');
+  const btnG  = document.getElementById('vbtn-grid');
+  if (grid) {
+    if (mode === 'list') { grid.classList.add('list-view'); }
+    else                 { grid.classList.remove('list-view'); }
+  }
+  if (btnL) btnL.classList.toggle('active', mode === 'list');
+  if (btnG) btnG.classList.toggle('active', mode === 'grid');
+  render();
+}
+
+function setTradeView(mode) {
+  tradeViewMode = mode;
+  localStorage.setItem(LS_TRADE_VIEW, mode);
+  const list = document.getElementById('trades-list');
+  const btnL = document.getElementById('jvbtn-list');
+  const btnC = document.getElementById('jvbtn-card');
+  if (list) {
+    if (mode === 'list') { list.classList.add('list-view'); }
+    else                 { list.classList.remove('list-view'); }
+  }
+  if (btnL) btnL.classList.toggle('active', mode === 'list');
+  if (btnC) btnC.classList.toggle('active', mode === 'card');
+  renderJournal();
+}
+
+/* ── 관심종목 리스트 행 ── */
+function stockListRowHTML(s) {
+  const [bg, fg] = SC[s.sector] || SC['기타'];
+  const tgt  = s.targetPrice ? '₩' + Number(s.targetPrice).toLocaleString() : '—';
+  const stp  = s.stopLoss    ? '₩' + Number(s.stopLoss).toLocaleString()    : '—';
+  const tagArr = s.tags ? s.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+  const hold   = s.holding || '관심';
+  const stars  = '★'.repeat(s.rating || 3) + '☆'.repeat(5 - (s.rating || 3));
+
+  return `<div class="s-card">
+    <div class="s-list-row">
+      <span class="s-list-name" title="${esc(s.name || '')}">${esc(s.name || '')}</span>
+      <span class="s-list-code">${s.code || '—'}</span>
+      <div class="s-list-badges">
+        <span class="badge-sector" style="background:${bg};color:${fg}">${esc(s.sector || '기타')}</span>
+        <span class="badge-hold ${hold}">${hold}</span>
+      </div>
+      <span class="s-list-stars">${stars}</span>
+      <div class="s-list-prices">
+        <div class="s-list-price-item">
+          <span class="s-list-price-lbl">목표</span>
+          <span class="s-list-price-val t">${tgt}</span>
+        </div>
+        <div class="s-list-price-item">
+          <span class="s-list-price-lbl">손절</span>
+          <span class="s-list-price-val s">${stp}</span>
+        </div>
+      </div>
+      ${s.memo ? `<span class="s-list-memo" title="${esc(s.memo)}">💬 ${esc(s.memo)}</span>` : '<span class="s-list-memo"></span>'}
+      ${tagArr.length
+        ? `<div class="s-list-tags">${tagArr.slice(0,3).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>`
+        : ''}
+      <div class="s-list-actions">
+        <button class="t-btn edit" onclick="openEdit('${s.id}')">편집</button>
+        <button class="t-btn del"  onclick="askDel('${s.id}','${esc(s.name || '')}')">삭제</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── 매매일지 리스트 행 ── */
+function tradeListRowHTML(t) {
+  const isB  = t.type === 'BUY';
+  const total = Number(t.price || 0) * Number(t.quantity || 0);
+  const r    = calcPnL(t);
+  let pnlText = '—', pnlCls = '';
+  if (r !== null) {
+    const sign = r.pnl >= 0 ? '+' : '';
+    pnlText = `${sign}${Math.round(r.pnl).toLocaleString()}원 (${sign}${r.pct.toFixed(1)}%)`;
+    pnlCls  = r.pnl > 0 ? 'pos' : r.pnl < 0 ? 'neg' : '';
+  }
+  return `<div class="trade-card ${t.type}">
+    <div class="trade-list-row">
+      <span class="trade-list-type ${t.type}">${isB ? '매수' : '매도'}</span>
+      <span class="trade-list-stock">${esc(t.stockName || '')}</span>
+      <span class="trade-list-date">${t.date || '—'}</span>
+      <span class="trade-list-price">₩${Number(t.price || 0).toLocaleString()}</span>
+      <span class="trade-list-qty">${Number(t.quantity || 0).toLocaleString()}주</span>
+      <span class="trade-list-total">₩${total.toLocaleString()}</span>
+      <span class="trade-list-pnl ${pnlCls}">${pnlText}</span>
+      ${t.acctName ? `<span class="trade-list-acct">🏦 ${esc(t.acctName)}</span>` : ''}
+      <div class="trade-list-chips">
+        ${t.reason  ? `<span class="chip reason">${esc(t.reason)}</span>`   : ''}
+        ${t.emotion ? `<span class="chip emotion">${esc(t.emotion)}</span>` : ''}
+      </div>
+      <div class="trade-list-actions">
+        <button class="t-btn edit" onclick="openEditTrade('${t.id}')">편집</button>
+        <button class="t-btn del"  onclick="askDelTrade('${t.id}','${esc(t.stockName || '')}')">삭제</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 function init() {
   if (localStorage.getItem(LS_SETUP)) hideBanner();
   const saved = localStorage.getItem(LS_URL);
@@ -3139,6 +3403,9 @@ function init() {
   updateBadge();
   renderPills();
   renderSectorOpts();
+  // 뷰 모드 초기화
+  setStockView(stockViewMode);
+  setTradeView(tradeViewMode);
   renderAcctTabs();
   loadStocks();
 }
