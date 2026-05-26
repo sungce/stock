@@ -852,6 +852,57 @@
     }
 
     /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       종목명 자동완성
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .ac-wrap { position: relative; }
+
+    .ac-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: #fff;
+      border: 1px solid var(--border2);
+      border-radius: var(--r-sm);
+      box-shadow: var(--shadow-lg);
+      z-index: 500;
+      max-height: 220px; overflow-y: auto;
+      display: none;
+    }
+    .ac-dropdown.open { display: block; }
+    .ac-dropdown::-webkit-scrollbar { width: 4px; }
+    .ac-dropdown::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    .ac-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 13px; cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background .1s;
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover, .ac-item.focused { background: var(--blue-dim); }
+
+    .ac-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--text3);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 1px 6px; border-radius: 4px;
+      flex-shrink: 0; min-width: 52px; text-align: center;
+    }
+    .ac-name { font-size: 13px; font-weight: 500; flex: 1; }
+    .ac-market {
+      font-size: 10px; font-weight: 600;
+      padding: 1px 6px; border-radius: 3px; flex-shrink: 0;
+    }
+    .ac-market.kospi { background: #eff6ff; color: #1d4ed8; }
+    .ac-market.kosdaq { background: #ecfdf5; color: #065f46; }
+
+    .ac-highlight { color: var(--blue); font-weight: 700; }
+
+    .ac-empty {
+      padding: 14px 13px; font-size: 12px;
+      color: var(--text3); text-align: center;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
        반응형
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
     @media (max-width: 620px) {
@@ -1152,11 +1203,20 @@
 
         <div class="fg">
           <label>종목코드</label>
-          <input id="f-code" class="fi mono" type="text" placeholder="005930" maxlength="6">
+          <input id="f-code" class="fi mono" type="text" placeholder="자동 입력" maxlength="6" readonly
+            style="background:var(--surface2);color:var(--text3);cursor:default">
         </div>
         <div class="fg">
           <label>종목명 *</label>
-          <input id="f-name" class="fi" type="text" placeholder="삼성전자">
+          <div class="ac-wrap">
+            <input id="f-name" class="fi" type="text" placeholder="예: 삼성전자"
+              autocomplete="off"
+              oninput="acQuery(this.value)"
+              onkeydown="acKeyNav(event)"
+              onfocus="acQuery(this.value)"
+              onblur="acBlur()">
+            <div id="ac-dropdown" class="ac-dropdown"></div>
+          </div>
         </div>
 
         <div class="fg">
@@ -1360,6 +1420,120 @@
 
 /* ── 섹터 정의 ── */
 const SECTORS = ['AI인프라','반도체','로보틱스','전력기기','2차전지','바이오','방산','금융','기타'];
+
+/* ════════════════════════════════════════════
+   국내 주요 종목 DB (종목명 → [코드, 시장])
+   KOSPI/KOSDAQ 주요 종목 약 300개 수록
+════════════════════════════════════════════ */
+const STOCK_DB = [
+  /* KOSPI 대형주 */
+  ['삼성전자','005930','KOSPI'],['SK하이닉스','000660','KOSPI'],
+  ['LG에너지솔루션','373220','KOSPI'],['삼성바이오로직스','207940','KOSPI'],
+  ['현대차','005380','KOSPI'],['기아','000270','KOSPI'],
+  ['셀트리온','068270','KOSPI'],['KB금융','105560','KOSPI'],
+  ['신한지주','055550','KOSPI'],['POSCO홀딩스','005490','KOSPI'],
+  ['LG화학','051910','KOSPI'],['삼성SDI','006400','KOSPI'],
+  ['하나금융지주','086790','KOSPI'],['현대모비스','012330','KOSPI'],
+  ['삼성물산','028260','KOSPI'],['카카오','035720','KOSPI'],
+  ['NAVER','035420','KOSPI'],['LG전자','066570','KOSPI'],
+  ['KT&G','033780','KOSPI'],['우리금융지주','316140','KOSPI'],
+  ['SK이노베이션','096770','KOSPI'],['고려아연','010130','KOSPI'],
+  ['두산에너빌리티','034020','KOSPI'],['한국전력','015760','KOSPI'],
+  ['GS칼텍스','078930','KOSPI'],['현대글로비스','086280','KOSPI'],
+  ['SK','034730','KOSPI'],['LG','003550','KOSPI'],
+  ['한화에어로스페이스','012450','KOSPI'],['한화시스템','272210','KOSPI'],
+  ['LIG넥스원','079550','KOSPI'],['현대로템','064350','KOSPI'],
+  ['한화오션','042660','KOSPI'],['HD현대중공업','329180','KOSPI'],
+  ['삼성중공업','010140','KOSPI'],['대우조선해양','042660','KOSPI'],
+  ['HD한국조선해양','009540','KOSPI'],['팬오션','028670','KOSPI'],
+  ['HMM','011200','KOSPI'],['대한항공','003490','KOSPI'],
+  ['아시아나항공','020560','KOSPI'],['LS일렉트릭','010120','KOSPI'],
+  ['효성중공업','298040','KOSPI'],['현대일렉트릭','267260','KOSPI'],
+  ['제일기획','030000','KOSPI'],['CJ대한통운','000120','KOSPI'],
+  ['롯데케미칼','011170','KOSPI'],['SKC','011790','KOSPI'],
+  ['OCI','010060','KOSPI'],['KCC','002380','KOSPI'],
+  ['이마트','139480','KOSPI'],['롯데쇼핑','023530','KOSPI'],
+  ['GS리테일','007070','KOSPI'],['BGF리테일','282330','KOSPI'],
+  ['아모레퍼시픽','090430','KOSPI'],['LG생활건강','051900','KOSPI'],
+  ['코스맥스','192820','KOSPI'],['농심','004370','KOSPI'],
+  ['CJ제일제당','097950','KOSPI'],['오리온','271560','KOSPI'],
+  ['하이브','352820','KOSPI'],['SM엔터테인먼트','041510','KOSPI'],
+  ['JYP엔터테인먼트','035900','KOSPI'],['YG엔터테인먼트','122870','KOSPI'],
+  ['삼성전기','009150','KOSPI'],['삼성SDS','018260','KOSPI'],
+  ['SK텔레콤','017670','KOSPI'],['KT','030200','KOSPI'],
+  ['LG유플러스','032640','KOSPI'],['크래프톤','259960','KOSPI'],
+  ['엔씨소프트','036570','KOSPI'],['넥슨게임즈','225570','KOSPI'],
+  ['넷마블','251270','KOSPI'],['카카오게임즈','293490','KOSPI'],
+  ['삼성화재','000810','KOSPI'],['DB손해보험','005830','KOSPI'],
+  ['미래에셋증권','006800','KOSPI'],['한국투자증권','071050','KOSPI'],
+  ['키움증권','039490','KOSPI'],['NH투자증권','005940','KOSPI'],
+  ['메리츠금융지주','138040','KOSPI'],['한국가스공사','036460','KOSPI'],
+  ['한국타이어앤테크놀로지','161390','KOSPI'],['현대제철','004020','KOSPI'],
+  ['POSCO퓨처엠','003670','KOSPI'],['에코프로비엠','247540','KOSPI'],
+  ['에코프로','086520','KOSPI'],['포스코인터내셔널','047050','KOSPI'],
+  /* KOSDAQ 주요 종목 */
+  ['셀트리온헬스케어','091990','KOSDAQ'],['HLB','028300','KOSDAQ'],
+  ['알테오젠','196170','KOSDAQ'],['리가켐바이오','141080','KOSDAQ'],
+  ['에이비엘바이오','298380','KOSDAQ'],['유한양행','000100','KOSPI'],
+  ['보령','003850','KOSPI'],['동아에스티','170900','KOSPI'],
+  ['한미약품','128940','KOSPI'],['종근당','185750','KOSPI'],
+  ['에스엠','041510','KOSPI'],['카카오페이','377300','KOSPI'],
+  ['카카오뱅크','323410','KOSPI'],['크래프톤','259960','KOSPI'],
+  ['더블유게임즈','192080','KOSDAQ'],['펄어비스','263750','KOSDAQ'],
+  ['위메이드','112040','KOSDAQ'],['컴투스','078340','KOSDAQ'],
+  ['레인보우로보틱스','277810','KOSDAQ'],['두산로보틱스','454910','KOSPI'],
+  ['한화로보틱스','079170','KOSDAQ'],['클로봇','322310','KOSDAQ'],
+  ['뉴로메카','348340','KOSDAQ'],['유진로봇','056080','KOSDAQ'],
+  ['로보티즈','108490','KOSDAQ'],['티로보틱스','117730','KOSDAQ'],
+  ['에스비비테크','389500','KOSDAQ'],['스맥','099220','KOSDAQ'],
+  ['세메스','036540','KOSPI'],['한미반도체','042700','KOSPI'],
+  ['HPSP','403870','KOSDAQ'],['이오테크닉스','039030','KOSDAQ'],
+  ['주성엔지니어링','036930','KOSDAQ'],['원익IPS','240810','KOSDAQ'],
+  ['피에스케이','319660','KOSDAQ'],['유진테크','084370','KOSDAQ'],
+  ['테크윙','089030','KOSDAQ'],['고영','098460','KOSDAQ'],
+  ['디스코','011060','KOSDAQ'],['파크시스템스','140860','KOSDAQ'],
+  ['리노공업','058470','KOSDAQ'],['오로스테크놀로지','322780','KOSDAQ'],
+  ['넥스틴','348210','KOSDAQ'],['하나마이크론','067310','KOSDAQ'],
+  ['DB하이텍','000990','KOSPI'],['네패스','033640','KOSDAQ'],
+  ['이수페타시스','007660','KOSPI'],['대덕전자','353200','KOSPI'],
+  ['심텍','222800','KOSDAQ'],['에스앤에스텍','101490','KOSDAQ'],
+  ['솔브레인','036830','KOSDAQ'],['이엔에프테크놀로지','102710','KOSDAQ'],
+  ['동진쎄미켐','005290','KOSPI'],['SK리츠','395400','KOSPI'],
+  ['HD현대일렉트릭','267260','KOSPI'],['일진전기','103590','KOSPI'],
+  ['가온전선','000500','KOSPI'],['LS전선아시아','229640','KOSDAQ'],
+  ['제룡전기','033100','KOSDAQ'],['비에이치아이','138720','KOSDAQ'],
+  ['에스퓨얼셀','288620','KOSDAQ'],['두산퓨얼셀','336260','KOSPI'],
+  ['수소에너지','LS','KOSPI'],['코윈테크','282880','KOSDAQ'],
+  ['파워로직스','047310','KOSDAQ'],['피엔티','137400','KOSDAQ'],
+  ['씨아이에스','222080','KOSDAQ'],['필에너지','378340','KOSDAQ'],
+  ['엔켐','348370','KOSDAQ'],['천보','278280','KOSDAQ'],
+  ['동화기업','025900','KOSPI'],['후성','093370','KOSPI'],
+  ['코스모화학','005420','KOSPI'],['엘앤에프','066970','KOSDAQ'],
+  ['포스코DX','022100','KOSPI'],['삼성SDI','006400','KOSPI'],
+  ['SK온','unk','KOSPI'],['비나텍','126340','KOSDAQ'],
+  ['나노신소재','121600','KOSDAQ'],['코스모신소재','005070','KOSPI'],
+  ['신성델타테크','065350','KOSDAQ'],['제이앤티씨','204270','KOSDAQ'],
+  ['하나투어','039130','KOSPI'],['모두투어','080160','KOSDAQ'],
+  ['호텔신라','008770','KOSPI'],['파라다이스','034230','KOSPI'],
+  ['GKL','114090','KOSPI'],['강원랜드','035250','KOSPI'],
+  ['현대건설','000720','KOSPI'],['대우건설','047040','KOSPI'],
+  ['GS건설','006360','KOSPI'],['DL이앤씨','375500','KOSPI'],
+  ['HDC현대산업개발','294870','KOSPI'],['삼성엔지니어링','028050','KOSPI'],
+  ['현대엔지니어링','unk','KOSPI'],['SK에코플랜트','unk','KOSPI'],
+  /* 추가 AI/테크 */
+  ['KT클라우드','unk','KOSDAQ'],['가비아','079940','KOSDAQ'],
+  ['코어라인소프트','430720','KOSDAQ'],['뷰노','338220','KOSDAQ'],
+  ['루닛','328130','KOSDAQ'],['딥노이드','315640','KOSDAQ'],
+  ['솔트룩스','304100','KOSDAQ'],['코난테크놀로지','402030','KOSDAQ'],
+  ['마인즈랩','377480','KOSDAQ'],['스캐터랩','unk','KOSDAQ'],
+  ['카카오엔터프라이즈','unk','KOSDAQ'],['네이버클라우드','unk','KOSDAQ'],
+  ['라온피플','300120','KOSDAQ'],['알체라','347860','KOSDAQ'],
+  ['셀바스AI','108860','KOSDAQ'],['수아랩','unk','KOSDAQ'],
+  ['티이엠씨','425490','KOSDAQ'],['에이직랜드','395760','KOSDAQ'],
+  ['파두','440110','KOSDAQ'],['리벨리온','unk','KOSDAQ'],
+  ['사피온','unk','KOSDAQ'],['퓨리오사AI','unk','KOSDAQ'],
+  ['오픈엣지테크놀로지','394280','KOSDAQ'],
+].filter(([,code]) => code !== 'unk' && code.length === 6);
 const SC = {   // 섹터 컬러 맵 (라이트 테마)
   'AI인프라':  ['#eff6ff','#1d4ed8'],
   '반도체':    ['#f5f3ff','#5b21b6'],
@@ -1369,7 +1543,6 @@ const SC = {   // 섹터 컬러 맵 (라이트 테마)
   '바이오':    ['#f0fdf4','#14532d'],
   '방산':      ['#fff7ed','#9a3412'],
   '금융':      ['#eef2ff','#3730a3'],
-  'etf':      ['#f9fafb','#374151'],
   '기타':      ['#f9fafb','#374151'],
 };
 
@@ -1386,8 +1559,115 @@ const st = {
 };
 
 /* ════════════════════════════════════════════
-   STORE (구글 시트 API ↔ localStorage)
+   종목명 자동완성 (Autocomplete)
 ════════════════════════════════════════════ */
+let acFocusIdx = -1;
+let acBlurTimer = null;
+
+function acQuery(q) {
+  acFocusIdx = -1;
+  const dd = document.getElementById('ac-dropdown');
+  const trim = q.trim();
+  if (!trim) { dd.classList.remove('open'); return; }
+
+  const lower = trim.toLowerCase();
+  // 종목명 앞에서 매칭 우선, 그 다음 중간 포함 매칭
+  const matched = STOCK_DB.filter(([name, code]) =>
+    name.includes(trim) || code.startsWith(trim) ||
+    name.toLowerCase().includes(lower)
+  ).sort((a, b) => {
+    const aStart = a[0].startsWith(trim) ? 0 : 1;
+    const bStart = b[0].startsWith(trim) ? 0 : 1;
+    return aStart - bStart || a[0].length - b[0].length;
+  }).slice(0, 10);
+
+  if (!matched.length) {
+    dd.innerHTML = `<div class="ac-empty">검색 결과가 없습니다<br><span style="font-size:11px">종목명을 직접 입력 후 저장할 수 있습니다</span></div>`;
+    dd.classList.add('open'); return;
+  }
+
+  dd.innerHTML = matched.map(([name, code, market], i) => {
+    const hi = name.replace(new RegExp(`(${trim.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'),
+      '<span class="ac-highlight">$1</span>');
+    return `<div class="ac-item" data-idx="${i}" data-name="${esc(name)}" data-code="${code}"
+      onmousedown="acSelect('${esc(name)}','${code}')">
+      <span class="ac-code">${code}</span>
+      <span class="ac-name">${hi}</span>
+      <span class="ac-market ${market.toLowerCase()}">${market}</span>
+    </div>`;
+  }).join('');
+  dd.classList.add('open');
+}
+
+function acSelect(name, code) {
+  document.getElementById('f-name').value = name;
+  document.getElementById('f-code').value = code;
+  document.getElementById('ac-dropdown').classList.remove('open');
+  acFocusIdx = -1;
+  // 섹터 자동 추천 (선택사항)
+  autoGuessSector(name);
+}
+
+function acBlur() {
+  // mousedown 이벤트가 먼저 처리되도록 약간 딜레이
+  acBlurTimer = setTimeout(() => {
+    document.getElementById('ac-dropdown').classList.remove('open');
+    acFocusIdx = -1;
+  }, 160);
+}
+
+function acKeyNav(e) {
+  const dd    = document.getElementById('ac-dropdown');
+  const items = dd.querySelectorAll('.ac-item');
+  if (!dd.classList.contains('open') || !items.length) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    acFocusIdx = Math.min(acFocusIdx + 1, items.length - 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    acFocusIdx = Math.max(acFocusIdx - 1, 0);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (acFocusIdx >= 0 && items[acFocusIdx]) {
+      const item = items[acFocusIdx];
+      acSelect(item.dataset.name, item.dataset.code);
+    } else if (items.length === 1) {
+      const item = items[0];
+      acSelect(item.dataset.name, item.dataset.code);
+    }
+    return;
+  } else if (e.key === 'Escape') {
+    dd.classList.remove('open'); return;
+  } else { return; }
+
+  // 포커스 스타일 갱신
+  items.forEach((el, i) => el.classList.toggle('focused', i === acFocusIdx));
+  if (items[acFocusIdx]) items[acFocusIdx].scrollIntoView({ block: 'nearest' });
+}
+
+/* 이름 기반 섹터 자동 추천 */
+function autoGuessSector(name) {
+  const rules = [
+    [['삼성전자','SK하이닉스','DB하이텍','HPSP','한미반도체','이오테크닉스','원익','주성','유진테크','피에스케이','리노','파크시스템스','넥스틴','에스앤에스텍'], '반도체'],
+    [['레인보우로보틱스','두산로보틱스','클로봇','뉴로메카','유진로봇','로보티즈','티로보틱스','에스비비테크','스맥'], '로보틱스'],
+    [['LS일렉트릭','효성중공업','현대일렉트릭','HD현대일렉트릭','일진전기','가온전선','제룡전기','현대일렉'], '전력기기'],
+    [['에코프로','POSCO퓨처엠','LG에너지솔루션','삼성SDI','엘앤에프','천보','동화기업','후성','코스모','나노신소재'], '2차전지'],
+    [['셀트리온','한미약품','유한양행','HLB','알테오젠','리가켐','에이비엘','보령','종근당','동아에스티','루닛','뷰노'], '바이오'],
+    [['한화에어로스페이스','한화시스템','LIG넥스원','현대로템','한화오션','HD현대중공업','삼성중공업'], '방산'],
+    [['KB금융','신한지주','하나금융','우리금융','메리츠','삼성화재','DB손해보험','미래에셋','키움','NH투자'], '금융'],
+    [['NAVER','카카오','SKT','KT','LG유플','크래프톤','엔씨소프트','넷마블','뤼이드','솔트룩스','루닛','뷰노','알체라'], 'AI인프라'],
+  ];
+  const sel = document.getElementById('f-sector');
+  if (!sel) return;
+  for (const [keywords, sector] of rules) {
+    if (keywords.some(k => name.includes(k))) {
+      sel.value = sector; return;
+    }
+  }
+}
+
+
 const Store = {
   get url()   { return localStorage.getItem(LS_URL) || ''; },
   get isApi() { return !!this.url; },
@@ -1636,6 +1916,7 @@ function openModal(stock=null) {
   document.getElementById('m-title').textContent  = stock ? '종목 편집' : '종목 추가';
   document.getElementById('f-code').value    = stock?.code    || '';
   document.getElementById('f-name').value    = stock?.name    || '';
+  document.getElementById('ac-dropdown').classList.remove('open');
   document.getElementById('f-sector').value  = stock?.sector  || SECTORS[0];
   document.getElementById('f-holding').value = stock?.holding || '관심';
   document.getElementById('f-target').value  = stock?.targetPrice || '';
