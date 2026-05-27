@@ -2,6 +2,13 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+    <!-- PWA -->
+  <link rel="manifest" href="#" id="pwa-manifest">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="StockNote">
+  <link rel="apple-touch-icon" href="#" id="pwa-icon">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>주식노트 | StockNote</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1142,6 +1149,52 @@
       letter-spacing: .3px;
     }
 
+    
+    /* ━━━━━━ PWA 설치 버튼 ━━━━━━ */
+    #pwa-install-btn {
+      display: none;
+      align-items: center; gap: 6px;
+      background: var(--blue); color: #fff;
+      border: none; padding: 7px 14px;
+      border-radius: var(--r-sm); font-size: 12px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      box-shadow: 0 2px 10px rgba(37,99,235,.35);
+      transition: all .15s; white-space: nowrap;
+      animation: pwa-pulse 2s ease-in-out infinite;
+    }
+    #pwa-install-btn:hover {
+      background: #1d4ed8; transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(37,99,235,.45);
+    }
+    #pwa-install-btn.visible { display: flex; }
+
+    @keyframes pwa-pulse {
+      0%, 100% { box-shadow: 0 2px 10px rgba(37,99,235,.35); }
+      50%       { box-shadow: 0 2px 18px rgba(37,99,235,.6); }
+    }
+
+    /* iOS 설치 안내 토스트 */
+    #pwa-ios-guide {
+      display: none;
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: #1e293b; color: #fff;
+      padding: 14px 18px; border-radius: 14px;
+      font-size: 13px; line-height: 1.6;
+      box-shadow: 0 8px 32px rgba(0,0,0,.3);
+      z-index: 9999; max-width: 320px; text-align: center;
+      animation: slide-up .3s ease;
+    }
+    #pwa-ios-guide.visible { display: block; }
+    #pwa-ios-guide .pwa-close {
+      position: absolute; top: 8px; right: 12px;
+      background: none; border: none; color: #94a3b8;
+      font-size: 16px; cursor: pointer; padding: 2px 6px;
+    }
+    @keyframes slide-up {
+      from { opacity:0; transform: translateX(-50%) translateY(20px); }
+      to   { opacity:1; transform: translateX(-50%) translateY(0); }
+    }
+
     @media (max-width: 620px) {
       .form-grid { grid-template-columns: 1fr; }
       .stats-row { grid-template-columns: repeat(2,1fr); }
@@ -1272,7 +1325,8 @@
       <div class="nav-tab" data-page="notes">종목노트</div>
       <div class="nav-tab" data-page="stats">분석·통계</div>
     </nav>
-    <div class="header-end">
+    <div class="header-end" style="display:flex;align-items:center;gap:8px;">
+      <button id="pwa-install-btn" onclick="pwaInstall()" title="앱으로 설치"><span>📲</span><span>설치</span></button>
       <span id="mode-badge" class="mode-badge local">LOCAL</span>
     </div>
   </div>
@@ -4455,6 +4509,149 @@ function tradeListRowHTML(t) {
       </div>
     </div>
   </div>`;
+}
+
+
+/* ════════════════════════════════════════════
+   PWA — 설치 & Service Worker
+════════════════════════════════════════════ */
+
+// ── Manifest를 동적으로 생성 (별도 파일 불필요) ──
+(function() {
+  const SVG_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="100" fill="#2563eb"/>
+    <text x="256" y="340" text-anchor="middle" font-size="280" font-family="Arial">📈</text>
+    <text x="256" y="430" text-anchor="middle" font-size="72" font-weight="bold"
+      font-family="Arial" fill="white" letter-spacing="2">StockNote</text>
+  </svg>`;
+  const iconBlob = new Blob([SVG_ICON], {type:'image/svg+xml'});
+  const iconUrl  = URL.createObjectURL(iconBlob);
+
+  const manifest = {
+    name:             'StockNote — 주식노트',
+    short_name:       'StockNote',
+    description:      '나만의 주식 매매 노트 & 분석 도구',
+    start_url:        './',
+    scope:            './',
+    display:          'standalone',
+    background_color: '#f2f5fb',
+    theme_color:      '#2563eb',
+    orientation:      'portrait-primary',
+    lang:             'ko',
+    icons: [
+      { src: iconUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' },
+    ]
+  };
+
+  const mBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+  const mUrl  = URL.createObjectURL(mBlob);
+  const link  = document.getElementById('pwa-manifest');
+  const icon  = document.getElementById('pwa-icon');
+  if (link) link.href = mUrl;
+  if (icon) icon.href = iconUrl;
+})();
+
+// ── Service Worker 등록 (오프라인 캐싱) ──
+if ('serviceWorker' in navigator) {
+  // SW를 동적으로 Blob URL로 등록
+  const SW_CODE = `
+const CACHE = 'stocknote-v1';
+const ASSETS = ['./'];
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        if (!res || res.status !== 200 || res.type !== 'basic') return res;
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      }).catch(() => caches.match('./'));
+    })
+  );
+});
+`;
+  try {
+    const swBlob = new Blob([SW_CODE], { type: 'application/javascript' });
+    const swUrl  = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swUrl, { scope: './' })
+      .then(reg => console.log('[PWA] Service Worker 등록:', reg.scope))
+      .catch(err => console.warn('[PWA] SW 등록 실패 (파일:// 환경):', err.message));
+  } catch(e) {
+    console.warn('[PWA] SW Blob 등록 불가:', e.message);
+  }
+}
+
+// ── 설치 프롬프트 처리 ──
+let _pwaPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _pwaPrompt = e;
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.classList.add('visible');
+});
+
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.classList.remove('visible');
+  _pwaPrompt = null;
+  toast('✅ StockNote 앱이 설치되었습니다!', 'ok');
+});
+
+function pwaInstall() {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const isInApp = window.navigator.standalone === true
+    || window.matchMedia('(display-mode: standalone)').matches;
+
+  if (isInApp) {
+    toast('이미 앱으로 실행 중입니다 ✓', 'ok');
+    return;
+  }
+
+  if (_pwaPrompt) {
+    _pwaPrompt.prompt();
+    _pwaPrompt.userChoice.then(result => {
+      if (result.outcome === 'accepted') toast('앱 설치 중...', 'ok');
+      _pwaPrompt = null;
+    });
+    return;
+  }
+
+  if (isIOS) {
+    const guide = document.getElementById('pwa-ios-guide');
+    if (guide) guide.classList.add('visible');
+    return;
+  }
+
+  // Android Chrome 구버전 등
+  toast('브라우저 메뉴 → "홈 화면에 추가"를 선택해 설치할 수 있습니다', 'info');
+}
+
+// 이미 설치된 경우 버튼 숨기기
+if (window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true) {
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.classList.remove('visible');
+  });
 }
 
 function init() {
