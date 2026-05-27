@@ -1751,7 +1751,10 @@ document.querySelectorAll('.nav-tab:not(.soon)').forEach(tab => {
     tab.classList.add('active');
     const page = tab.dataset.page;
     document.getElementById('page-' + page).classList.add('active');
-    if (page === 'journal' && jt.trades.length === 0) loadTrades();
+    if (page === 'journal') {
+      if (jt.trades.length === 0) loadTrades();
+      else { populateTradeFilters(); renderJournal(); }
+    }
     if (page === 'stats') {
       initStats().then(() => {
         // initStats 완료 후 탭이 확실히 렌더링되도록 보장
@@ -2068,7 +2071,7 @@ function renderAcctModalList() {
     return;
   }
   wrap.innerHTML = acctList.map((a, i) => {
-    const cnt = jt.trades.filter(t => t.acctName === a.name).length;
+    const cnt = (typeof jt !== 'undefined' && jt.trades) ? jt.trades.filter(t => t.acctName === a.name).length : 0;
     if (acctEditing === a.id) {
       return `<div class="acct-row">
         <input class="acct-edit-input" id="acct-edit-inp-${i}" value="${esc(a.name)}"
@@ -3451,8 +3454,8 @@ function init() {
   setTradeView(tradeViewMode);
   renderAcctTabs();
   loadStocks();
+  loadTrades();
 }
-
 init();
 </script>
 </body>
