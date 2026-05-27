@@ -1752,7 +1752,13 @@ document.querySelectorAll('.nav-tab:not(.soon)').forEach(tab => {
     const page = tab.dataset.page;
     document.getElementById('page-' + page).classList.add('active');
     if (page === 'journal' && jt.trades.length === 0) loadTrades();
-    if (page === 'stats') initStats();
+    if (page === 'stats') {
+      initStats().then(() => {
+        // initStats 완료 후 탭이 확실히 렌더링되도록 보장
+        if (typeof renderAcctStatTabs === 'function') renderAcctStatTabs();
+        if (typeof renderAcctStatSection === 'function') renderAcctStatSection(typeof currentStatAcct !== 'undefined' ? currentStatAcct : '전체');
+      }).catch(e => console.error('initStats 에러:', e));
+    }
   });
 });
 
@@ -2906,21 +2912,24 @@ function renderAcctStatSection(acctName) {
 }
 
 async function initStats() {
-  if (jt.trades.length === 0) await loadTrades();
-  setChartDefaults();
-  renderStatsSummary();
-  renderInsightCards();
-  renderSectorChart();
-  renderMonthlyChart();
-  renderReasonChart();
-  renderEmotionChart();
-  renderHoldingsTable();
-  renderAccountPnL();
-  renderCurPriceInputs();
-  // 계좌별 통계
-  currentStatAcct = '전체';
-  renderAcctStatTabs();
-  renderAcctStatSection('전체');
+  try { if (jt.trades.length === 0) await loadTrades(); } catch(e) { console.error('loadTrades:', e); }
+  try { if (typeof nt !== 'undefined' && nt.notes.length === 0) await loadNotes(); } catch(e) { console.error('loadNotes:', e); }
+  try { setChartDefaults();    } catch(e) { console.error('setChartDefaults:', e); }
+  try { renderStatsSummary();  } catch(e) { console.error('renderStatsSummary:', e); }
+  try { renderInsightCards();  } catch(e) { console.error('renderInsightCards:', e); }
+  try { renderSectorChart();   } catch(e) { console.error('renderSectorChart:', e); }
+  try { renderMonthlyChart();  } catch(e) { console.error('renderMonthlyChart:', e); }
+  try { renderReasonChart();   } catch(e) { console.error('renderReasonChart:', e); }
+  try { renderEmotionChart();  } catch(e) { console.error('renderEmotionChart:', e); }
+  try { renderHoldingsTable(); } catch(e) { console.error('renderHoldingsTable:', e); }
+  try { if (typeof renderAccountPnL === 'function') renderAccountPnL(); } catch(e) { console.error('renderAccountPnL:', e); }
+  try { if (typeof renderCurPriceInputs === 'function') renderCurPriceInputs(); } catch(e) { console.error('renderCurPriceInputs:', e); }
+  // 계좌별 통계 — 항상 마지막에 독립 실행
+  try {
+    currentStatAcct = '전체';
+    renderAcctStatTabs();
+    renderAcctStatSection('전체');
+  } catch(e) { console.error('계좌별통계:', e); }
 }
 
 function setChartDefaults() {
