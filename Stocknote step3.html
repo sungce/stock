@@ -2,6 +2,13 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+    <!-- PWA -->
+  <link rel="manifest" href="#" id="pwa-manifest">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="StockNote">
+  <link rel="apple-touch-icon" href="#" id="pwa-icon">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>주식노트 | StockNote</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
@@ -1044,6 +1051,52 @@
       letter-spacing: .3px;
     }
 
+    
+    /* ━━━━━━ PWA 설치 버튼 ━━━━━━ */
+    #pwa-install-btn {
+      display: none;
+      align-items: center; gap: 6px;
+      background: var(--blue); color: #fff;
+      border: none; padding: 7px 14px;
+      border-radius: var(--r-sm); font-size: 12px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      box-shadow: 0 2px 10px rgba(37,99,235,.35);
+      transition: all .15s; white-space: nowrap;
+      animation: pwa-pulse 2s ease-in-out infinite;
+    }
+    #pwa-install-btn:hover {
+      background: #1d4ed8; transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(37,99,235,.45);
+    }
+    #pwa-install-btn.visible { display: flex; }
+
+    @keyframes pwa-pulse {
+      0%, 100% { box-shadow: 0 2px 10px rgba(37,99,235,.35); }
+      50%       { box-shadow: 0 2px 18px rgba(37,99,235,.6); }
+    }
+
+    /* iOS 설치 안내 토스트 */
+    #pwa-ios-guide {
+      display: none;
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: #1e293b; color: #fff;
+      padding: 14px 18px; border-radius: 14px;
+      font-size: 13px; line-height: 1.6;
+      box-shadow: 0 8px 32px rgba(0,0,0,.3);
+      z-index: 9999; max-width: 320px; text-align: center;
+      animation: slide-up .3s ease;
+    }
+    #pwa-ios-guide.visible { display: block; }
+    #pwa-ios-guide .pwa-close {
+      position: absolute; top: 8px; right: 12px;
+      background: none; border: none; color: #94a3b8;
+      font-size: 16px; cursor: pointer; padding: 2px 6px;
+    }
+    @keyframes slide-up {
+      from { opacity:0; transform: translateX(-50%) translateY(20px); }
+      to   { opacity:1; transform: translateX(-50%) translateY(0); }
+    }
+
     @media (max-width: 620px) {
       .form-grid { grid-template-columns: 1fr; }
       .stats-row { grid-template-columns: repeat(2,1fr); }
@@ -1077,7 +1130,8 @@
       <div class="nav-tab" data-page="notes">종목노트</div>
       <div class="nav-tab" data-page="stats">분석·통계</div>
     </nav>
-    <div class="header-end">
+    <div class="header-end" style="display:flex;align-items:center;gap:8px;">
+      <button id="pwa-install-btn" onclick="pwaInstall()" title="앱으로 설치"><span>📲</span><span>설치</span></button>
       <span id="mode-badge" class="mode-badge local">LOCAL</span>
     </div>
   </div>
@@ -3877,6 +3931,126 @@ function tradeListRowHTML(t) {
     </div>
   </div>`;
 }
+
+
+/* ════════════════════════════════════════════
+   PWA — Netlify 배포용 설치 & Service Worker
+════════════════════════════════════════════ */
+
+// ── SVG 아이콘 인라인 생성 ──
+const _PWA_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#2563eb"/>
+  <rect x="60" y="100" width="392" height="280" rx="20" fill="#1e40af"/>
+  <rect x="80" y="120" width="352" height="240" rx="12" fill="#eff6ff"/>
+  <rect x="100" y="200" width="40" height="120" rx="6" fill="#2563eb" opacity=".6"/>
+  <rect x="160" y="160" width="40" height="160" rx="6" fill="#2563eb" opacity=".8"/>
+  <rect x="220" y="180" width="40" height="140" rx="6" fill="#059669"/>
+  <rect x="280" y="140" width="40" height="180" rx="6" fill="#059669"/>
+  <rect x="340" y="120" width="40" height="200" rx="6" fill="#2563eb"/>
+  <polyline points="120,240 180,190 240,210 300,165 360,145"
+    fill="none" stroke="#dc2626" stroke-width="8"
+    stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="430" text-anchor="middle"
+    font-size="52" font-weight="bold" font-family="Arial,sans-serif"
+    fill="white" letter-spacing="1">StockNote</text>
+</svg>`;
+
+// ── Manifest 동적 생성 (별도 파일 없이 Blob URL 사용) ──
+(function initManifest() {
+  try {
+    const iconBlob = new Blob([_PWA_ICON_SVG], { type: 'image/svg+xml' });
+    const iconUrl  = URL.createObjectURL(iconBlob);
+    const manifest = {
+      name: 'StockNote — 주식노트', short_name: 'StockNote',
+      description: '나만의 주식 매매 노트 & 분석 도구',
+      start_url: location.href, scope: location.href.replace(/[^/]*$/, ''),
+      display: 'standalone', background_color: '#f2f5fb', theme_color: '#2563eb',
+      orientation: 'portrait-primary', lang: 'ko', categories: ['finance'],
+      icons: [
+        { src: iconUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
+        { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' }
+      ]
+    };
+    const mUrl = URL.createObjectURL(
+      new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' })
+    );
+    let el = document.getElementById('pwa-manifest');
+    if (!el) { el = document.createElement('link'); el.rel='manifest'; el.id='pwa-manifest'; document.head.appendChild(el); }
+    el.href = mUrl;
+    let ic = document.getElementById('pwa-icon');
+    if (!ic) { ic = document.createElement('link'); ic.rel='apple-touch-icon'; ic.id='pwa-icon'; document.head.appendChild(ic); }
+    ic.href = iconUrl;
+  } catch(e) { console.warn('[PWA] Manifest 생성 실패:', e.message); }
+})();
+
+// ── Service Worker (Network First 전략) ──
+(function initSW() {
+  if (!('serviceWorker' in navigator)) return;
+  const SW = `
+const CACHE = 'stocknote-v2';
+self.addEventListener('install', e => { self.skipWaiting(); });
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(ks =>
+    Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))
+  ).then(()=>self.clients.claim()));
+});
+self.addEventListener('fetch', e => {
+  if (e.request.method!=='GET'||!e.request.url.startsWith('http')) return;
+  e.respondWith(
+    fetch(e.request).then(res=>{
+      if(res&&res.status===200){const c=res.clone();caches.open(CACHE).then(ca=>ca.put(e.request,c));}
+      return res;
+    }).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.registration.scope)))
+  );
+});`;
+  try {
+    const url = URL.createObjectURL(new Blob([SW], { type: 'application/javascript' }));
+    navigator.serviceWorker.register(url, { scope: './' })
+      .then(r => console.log('[PWA] SW 등록 ✓', r.scope))
+      .catch(e => console.info('[PWA] SW:', e.message));
+  } catch(e) { console.warn('[PWA] SW 실패:', e.message); }
+})();
+
+// ── 설치 프롬프트 ──
+let _pwaPrompt = null;
+const _isStandalone = window.navigator.standalone === true
+  || window.matchMedia('(display-mode: standalone)').matches;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); _pwaPrompt = e;
+  if (!_isStandalone) {
+    const btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.classList.add('visible');
+  }
+});
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.classList.remove('visible');
+  _pwaPrompt = null;
+  toast('🎉 StockNote가 설치되었습니다!', 'ok');
+});
+
+function pwaInstall() {
+  if (_isStandalone) { toast('이미 앱으로 실행 중입니다 ✓', 'ok'); return; }
+  if (_pwaPrompt) {
+    _pwaPrompt.prompt();
+    _pwaPrompt.userChoice.then(r => {
+      toast(r.outcome==='accepted' ? '앱 설치 중…' : '설치가 취소되었습니다', r.outcome==='accepted'?'ok':'info');
+      _pwaPrompt = null;
+    });
+    return;
+  }
+  if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream) {
+    const g = document.getElementById('pwa-ios-guide');
+    if (g) g.classList.add('visible');
+    return;
+  }
+  toast('브라우저 주소창의 설치 아이콘(⊕)을 클릭하거나, 메뉴 → "앱 설치"를 선택하세요', 'info');
+}
+window.addEventListener('DOMContentLoaded', () => {
+  if (_isStandalone) { const b = document.getElementById('pwa-install-btn'); if(b) b.classList.remove('visible'); }
+});
+
 
 function init() {
   if (localStorage.getItem(LS_SETUP)) hideBanner();
