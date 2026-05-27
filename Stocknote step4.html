@@ -876,9 +876,20 @@
     .color-chip.active { border-color: #111827; transform: scale(1.1); }
     
     /* ━━━━━━ 계좌별 통계 분석 CSS ━━━━━━ */
+    .acct-stat-tab-wrap {
+      display: flex; align-items: center; gap: 8px;
+      flex-wrap: wrap; margin-bottom: 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 8px 12px;
+    }
+    .acct-stat-tab-label {
+      font-size: 10px; font-weight: 700; color: var(--text3);
+      letter-spacing: .5px; margin-right: 4px; white-space: nowrap;
+    }
     .acct-stat-tabs {
-      display: flex; gap: 6px; flex-wrap: wrap;
-      margin-bottom: 16px; align-items: center;
+      display: flex; gap: 5px; flex-wrap: wrap; align-items: center;
     }
     .acct-stat-tab {
       padding: 5px 16px; border-radius: 100px; font-size: 12px;
@@ -892,6 +903,15 @@
       background: var(--blue); border-color: var(--blue);
       color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,.3);
     }
+    .acct-stat-add-hint {
+      font-size: 11px; color: var(--text3);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .acct-stat-add-hint a {
+      color: var(--blue); font-weight: 600; cursor: pointer;
+      text-decoration: none;
+    }
+    .acct-stat-add-hint a:hover { text-decoration: underline; }
 
     /* 계좌별 통계 요약 카드 */
     .acct-stat-summary {
@@ -1364,7 +1384,10 @@
     </div>
 
     <!-- 계좌 탭 -->
-    <div class="acct-stat-tabs" id="acct-stat-tabs" style="margin-top:12px;"></div>
+    <div class="acct-stat-tab-wrap" style="margin-top:12px;">
+      <span class="acct-stat-tab-label">계좌 선택</span>
+      <div class="acct-stat-tabs" id="acct-stat-tabs"></div>
+    </div>
 
     <!-- 요약 카드 -->
     <div class="acct-stat-summary" id="acct-stat-summary"></div>
@@ -3282,12 +3305,23 @@ let currentStatAcct = '전체';
 function renderAcctStatTabs() {
   const wrap = document.getElementById('acct-stat-tabs');
   if (!wrap) return;
+
   const accounts = typeof acctList !== 'undefined' ? acctList : [];
+
+  // "전체" 탭은 계좌 등록 여부와 무관하게 항상 표시
   const tabs = ['전체', ...accounts.map(a => a.name)];
+
   if (accounts.length === 0) {
-    wrap.innerHTML = '<span style="font-size:12px;color:var(--text3);">계좌를 등록하면 계좌별 통계를 볼 수 있습니다.</span>';
+    // 계좌 미등록 — 전체 탭 + 등록 안내
+    wrap.innerHTML =
+      `<button class="acct-stat-tab active" onclick="switchStatAcct('전체')">전체</button>` +
+      `<span class="acct-stat-add-hint">` +
+        `<span>· 계좌를 등록하면 계좌별로 분석할 수 있습니다</span>` +
+        `<a onclick="if(typeof openAcctModal==='function')openAcctModal()">🏦 계좌 추가 →</a>` +
+      `</span>`;
     return;
   }
+
   wrap.innerHTML = tabs.map(name =>
     `<button class="acct-stat-tab ${name === currentStatAcct ? 'active' : ''}"
       onclick="switchStatAcct('${esc(name)}')">${esc(name)}</button>`
