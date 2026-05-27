@@ -2205,6 +2205,7 @@ function confirmEditAcct(id, idx) {
   try { const list = JSON.parse(localStorage.getItem('sn_trades') || '[]'); list.forEach(t => { if (t.acctName === oldName) t.acctName = newName; }); localStorage.setItem('sn_trades', JSON.stringify(list)); } catch {}
   if (selectedAcct === oldName) { selectedAcct = newName; localStorage.setItem(LS_ACCT_SEL, newName); }
   setAccountsStorage(acctList); acctEditing = null; renderAcctModalList(); renderAcctTabs();
+  if (typeof renderJournal === 'function') renderJournal();
   toast(`"${oldName}" → "${newName}" 수정됨`, 'ok');
 }
 function deleteAcct(id, name) {
@@ -2214,7 +2215,9 @@ function deleteAcct(id, name) {
   jt.trades.forEach(t => { if (t.acctName === name) t.acctName = ''; });
   try { const list = JSON.parse(localStorage.getItem('sn_trades') || '[]'); list.forEach(t => { if (t.acctName === name) t.acctName = ''; }); localStorage.setItem('sn_trades', JSON.stringify(list)); } catch {}
   if (selectedAcct === name) { selectedAcct = '전체'; localStorage.setItem(LS_ACCT_SEL, '전체'); }
-  setAccountsStorage(acctList); renderAcctModalList(); renderAcctTabs(); toast(`"${name}" 계좌 삭제됨`, 'info');
+  setAccountsStorage(acctList); renderAcctModalList(); renderAcctTabs();
+  if (typeof renderJournal === 'function') renderJournal();
+  toast(`"${name}" 계좌 삭제됨`, 'info');
 }
 function addAccount() {
   const inp = document.getElementById('new-acct-name'); const name = inp.value.trim();
@@ -2223,6 +2226,7 @@ function addAccount() {
   const id = Date.now().toString(36) + Math.random().toString(36).substr(2,4);
   acctList.push({ id, name }); setAccountsStorage(acctList);
   inp.value = ''; renderAcctModalList(); renderAcctTabs(); refreshAcctSelect();
+  if (typeof renderJournal === 'function') renderJournal();
   toast(`"${name}" 계좌 추가됨`, 'ok');
 }
 function saveAccounts() { setAccountsStorage(acctList); renderAcctTabs(); refreshAcctSelect(); closeAcctModal(); toast('계좌 설정이 저장되었습니다', 'ok'); }
@@ -2439,6 +2443,7 @@ function tradeCardHTML(t) {
   const total = Number(t.price || 0) * Number(t.quantity || 0);
   const r    = calcPnL(t);
   const chips = [];
+  if (t.acctName) chips.push(`<span class="acct-badge">🏦 ${esc(t.acctName)}</span>`);
   if (t.reason)  chips.push(`<span class="chip reason">${esc(t.reason)}</span>`);
   if (t.emotion) chips.push(`<span class="chip emotion">${esc(t.emotion)}</span>`);
 
@@ -2509,7 +2514,17 @@ function openTradeModal(trade = null) {
       accounts.map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
     // 편집 시 기존 계좌 복원, 신규 시 현재 탭 계좌 자동 선택
     if (trade && trade.acctName) {
-      acctSel.value = trade.acctName;
+      // 옵션 목록에 해당 값이 있는지 확인 후 설정
+      const found = [...acctSel.options].some(o => o.value === trade.acctName);
+      if (found) {
+        acctSel.value = trade.acctName;
+      } else {
+        // 등록되지 않은 계좌명이면 옵션에 임시 추가 후 선택
+        const opt = document.createElement('option');
+        opt.value = trade.acctName; opt.textContent = trade.acctName;
+        acctSel.appendChild(opt);
+        acctSel.value = trade.acctName;
+      }
     } else if (typeof selectedAcct !== 'undefined' && selectedAcct !== '전체') {
       acctSel.value = selectedAcct;
     }
