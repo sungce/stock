@@ -1455,6 +1455,24 @@
   </div>
 
 
+    <div class="stats-section" style="margin-bottom:20px">
+    <div class="section-title">🏦 계좌별 실현 손익</div>
+    <div class="acct-pnl-grid" id="acct-pnl-grid" style="margin-top:14px"><div style="color:var(--text3);font-size:12px;padding:8px 0;">계좌를 등록하면 계좌별 손익이 표시됩니다.</div></div>
+  </div>
+
+    <!-- 현재가 입력 섹션 -->
+  <div class="curprice-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div class="section-title">📡 현재가 입력
+        <span style="font-size:10px;font-weight:400;color:var(--text3);margin-left:6px;">— 보유 종목의 현재 시세를 입력하면 평가 손익이 계산됩니다</span>
+      </div>
+      <button class="btn-refresh-price" onclick="applyCurrentPrices()">✓ 적용하여 재계산</button>
+    </div>
+    <div class="curprice-grid" id="curprice-grid">
+      <div style="color:var(--text3);font-size:12px;padding:8px 0;">보유 중인 종목이 없습니다.</div>
+    </div>
+  </div>
+
   <!-- ── 계좌별 통계 분석 ── -->
   <div class="stats-section" id="acct-stat-section" style="margin-bottom:20px">
     <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -2309,7 +2327,10 @@ document.querySelectorAll('.nav-tab:not(.soon)').forEach(tab => {
     tab.classList.add('active');
     const page = tab.dataset.page;
     document.getElementById('page-' + page).classList.add('active');
-    if (page === 'journal' && jt.trades.length === 0) loadTrades();
+    if (page === 'journal') {
+      if (jt.trades.length === 0) loadTrades();
+      else { populateTradeFilters(); renderJournal(); }
+    }
     if (page === 'notes'   && nt.notes.length  === 0) loadNotes();
     if (page === 'stats') {
       initStats().then(() => {
@@ -2598,7 +2619,7 @@ function renderAcctModalList() {
   const wrap = document.getElementById('acct-list-wrap'); if (!wrap) return;
   if (!acctList.length) { wrap.innerHTML = '<p style="font-size:12px;color:var(--text3);text-align:center;padding:14px 0;">등록된 계좌가 없습니다.</p>'; return; }
   wrap.innerHTML = acctList.map((a, i) => {
-    const cnt = jt.trades.filter(t => t.acctName === a.name).length;
+    const cnt = (typeof jt !== 'undefined' && jt.trades) ? jt.trades.filter(t => t.acctName === a.name).length : 0;
     if (acctEditing === a.id) return `<div class="acct-row"><input class="acct-edit-input" id="acct-edit-inp-${i}" value="${esc(a.name)}" onkeydown="if(event.key==='Enter')confirmEditAcct('${a.id}',${i});if(event.key==='Escape')cancelEditAcct()"><button class="btn-ae ok" onclick="confirmEditAcct('${a.id}',${i})">✓</button><button class="btn-ae cancel" onclick="cancelEditAcct()">✕</button></div>`;
     return `<div class="acct-row"><span style="font-size:16px">🏦</span><span class="acct-name-display">${esc(a.name)}</span><span class="acct-trade-cnt">${cnt}건</span><button class="btn-ae edit" onclick="startEditAcct('${a.id}')">✏</button><button class="btn-ae del" onclick="deleteAcct('${a.id}','${esc(a.name)}')">✕</button></div>`;
   }).join('');
@@ -4443,10 +4464,13 @@ function init() {
   updateBadge();
   renderPills();
   renderSectorOpts();
+  renderAcctTabs();
   // 뷰 모드 초기화
   setStockView(stockViewMode);
   setTradeView(tradeViewMode);
+  // 관심종목 + 거래 데이터 동시 로드 (새로고침 시 데이터 유지)
   loadStocks();
+  loadTrades();
 }
 
 init();
