@@ -1,324 +1,230 @@
-// ═══════════════════════════════════════════════════════════
-//  주식노트 — Google Apps Script 백엔드  (Code.gs)
-//  배포: 확장 프로그램 > Apps Script > 배포 > 웹 앱
-//       실행 계정: 나 / 액세스 권한: 모든 사용자
-// ═══════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
+//  StockNote — Google Apps Script (전체 완성본)
+//  시트 구조:
+//    "stocks"   : id, name, code, market, sector, rating, holding,
+//                 targetPrice, stopLoss, tags, memo, createdAt
+//    "trades"   : id, stockName, acctName, type, date, price,
+//                 quantity, avgBuyPrice, reason, emotion, memo, createdAt
+//    "notes"    : id, stockName, title, content, rating, createdAt
+//    "accounts" : id, name, createdAt
+// ════════════════════════════════════════════════════════════════
 
-// ① 스프레드시트 ID를 여기에 붙여넣으세요
-//    URL: https://docs.google.com/spreadsheets/d/[여기]/edit
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
+const SS  = SpreadsheetApp.getActiveSpreadsheet();
 
+// ── 시트 헤더 정의 ────────────────────────────────────────────
+const HEADERS = {
+  stocks:   ['id','name','code','market','sector','rating','holding',
+             'targetPrice','stopLoss','tags','memo','createdAt'],
+  trades:   ['id','stockName','acctName','type','date','price',
+             'quantity','avgBuyPrice','reason','emotion','memo','createdAt'],
+  notes:    ['id','stockName','title','content','rating','createdAt'],
+  accounts: ['id','name','createdAt'],
+};
 
-// ───────────────────────────────────────────────
-//  라우터 — GET (읽기)
-// ───────────────────────────────────────────────
-function doGet(e) {
-  try {
-    const p = e.parameter;
-    let result;
-    switch (p.action) {
-      case 'getStocks':  result = getStocks();             break;
-      case 'getNotes':   result = getNotes(p.stockId);     break;
-      case 'getTrades':  result = getTrades(p.stockId);    break;
-      case 'ping':       result = { ok: true, ts: new Date().toISOString() }; break;
-      default:           result = { error: '알 수 없는 액션: ' + p.action };
-    }
-    return jsonRes(result);
-  } catch (err) {
-    return jsonRes({ error: err.toString() });
+// ── 시트 가져오기 (없으면 자동 생성) ────────────────────────────
+function getSheet(name) {
+  let sheet = SS.getSheetByName(name);
+  if (!sheet) {
+    sheet = SS.insertSheet(name);
+    sheet.appendRow(HEADERS[name]);
+    sheet.getRange(1, 1, 1, HEADERS[name].length)
+      .setFontWeight('bold')
+      .setBackground('#2563eb')
+      .setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
   }
+  return sheet;
 }
 
-
-// ───────────────────────────────────────────────
-//  라우터 — POST (쓰기)
-//  Content-Type: text/plain 으로 호출해야 CORS 에러 없음
-// ───────────────────────────────────────────────
-function doPost(e) {
-  let body;
-  try {
-    body = JSON.parse(e.postData.contents);
-  } catch (err) {
-    return jsonRes({ error: '요청 파싱 오류: ' + err.toString() });
-  }
-
-  try {
-    let result;
-    switch (body.action) {
-      // ── 관심종목 ──
-      case 'addStock':    result = addStock(body.data);           break;
-      case 'updateStock': result = updateStock(body.id, body.data); break;
-      case 'deleteStock': result = deleteById('STOCKS', body.id); break;
-      // ── 종목 노트 ──
-      case 'addNote':     result = addNote(body.data);            break;
-      case 'updateNote':  result = updateNote(body.id, body.data); break;
-      case 'deleteNote':  result = deleteById('NOTES', body.id);  break;
-      // ── 매매일지 ──
-      case 'addTrade':    result = addTrade(body.data);           break;
-      case 'updateTrade': result = updateTrade(body.id, body.data); break;
-      case 'deleteTrade': result = deleteById('TRADES', body.id); break;
-      default: result = { error: '알 수 없는 액션: ' + body.action };
-    }
-    return jsonRes(result);
-  } catch (err) {
-    return jsonRes({ error: err.toString() });
-  }
+// ── 시트 → JSON 배열 변환 ────────────────────────────────────
+function sheetToJson(name) {
+  const sheet  = getSheet(name);
+  const values = sheet.getDataRange().getValues();
+  if (values.length <= 1) return [];
+  const headers = values[0];
+  return values.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = row[i] === '' ? '' : String(row[i]); });
+    return obj;
+  }).filter(r => r.id); // id 없는 빈 행 제외
 }
 
+// ── ID로 행 번호 찾기 (1-based, 헤더 포함) ────────────────────
+function findRowById(sheet, id) {
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(id)) return i + 1;
+  }
+  return -1;
+}
 
-// ───────────────────────────────────────────────
-//  공통 헬퍼
-// ───────────────────────────────────────────────
-function jsonRes(data) {
+// ── 새 ID 생성 ────────────────────────────────────────────────
+function newId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+// ── CORS 응답 헬퍼 ────────────────────────────────────────────
+function jsonResponse(data) {
   return ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function generateId() {
-  return Utilities.getUuid();
-}
-
-function now() {
-  return new Date().toISOString();
-}
-
-function getSheet(name) {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = ss.getSheetByName(name);
-  if (!sheet) throw new Error(`시트 "${name}" 를 찾을 수 없습니다. setupSheets() 를 먼저 실행하세요.`);
-  return sheet;
-}
-
-// 시트 전체를 객체 배열로 변환 (1행 = 헤더)
-function sheetToObjects(sheetName) {
-  const sheet = getSheet(sheetName);
-  const data  = sheet.getDataRange().getValues();
-  if (data.length <= 1) return [];
-
-  const headers = data[0].map(String);
-  return data.slice(1)
-    .filter(row => row[0] !== '' && row[0] !== null) // 빈 행 제외
-    .map(row => {
-      const obj = {};
-      headers.forEach((h, i) => { obj[h] = row[i]; });
-      return obj;
-    });
-}
-
-// ID로 행 번호(1-based) 검색
-function findRowIndex(sheetName, id) {
-  const sheet = getSheet(sheetName);
-  const ids   = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 1), 1).getValues();
-  for (let i = 0; i < ids.length; i++) {
-    if (String(ids[i][0]) === String(id)) return i + 2; // +2: 헤더 행 + 0-index
-  }
-  return -1;
-}
-
-function deleteById(sheetName, id) {
-  const row = findRowIndex(sheetName, id);
-  if (row < 0) return { error: '항목을 찾을 수 없습니다 (id: ' + id + ')' };
-  getSheet(sheetName).deleteRow(row);
-  return { success: true };
-}
-
-
-// ───────────────────────────────────────────────
-//  STOCKS  관심종목
-//  컬럼: id | code | name | sector | tags |
-//        targetPrice | stopLoss | rating | holding | memo | createdAt
-// ───────────────────────────────────────────────
-function getStocks() {
-  return sheetToObjects('STOCKS');
-}
-
-function addStock(d) {
-  const sheet = getSheet('STOCKS');
-  const id = generateId();
-  sheet.appendRow([
-    id,
-    d.code        || '',
-    d.name        || '',
-    d.sector      || '기타',
-    d.tags        || '',
-    Number(d.targetPrice) || 0,
-    Number(d.stopLoss)    || 0,
-    Number(d.rating)      || 3,
-    d.holding     || '관심',
-    d.memo        || '',
-    now()
-  ]);
-  return { success: true, id };
-}
-
-function updateStock(id, d) {
-  const row = findRowIndex('STOCKS', id);
-  if (row < 0) return { error: '항목 없음' };
-  const sheet = getSheet('STOCKS');
-  // col 2~10 업데이트 (id, createdAt 제외)
-  sheet.getRange(row, 2, 1, 9).setValues([[
-    d.code        || '',
-    d.name        || '',
-    d.sector      || '기타',
-    d.tags        || '',
-    Number(d.targetPrice) || 0,
-    Number(d.stopLoss)    || 0,
-    Number(d.rating)      || 3,
-    d.holding     || '관심',
-    d.memo        || ''
-  ]]);
-  return { success: true };
-}
-
-
-// ───────────────────────────────────────────────
-//  NOTES  종목 노트
-//  컬럼: id | stockId | stockName | content |
-//        risks | links | createdAt | updatedAt
-// ───────────────────────────────────────────────
-function getNotes(stockId) {
-  const notes = sheetToObjects('NOTES');
-  return stockId ? notes.filter(n => String(n.stockId) === String(stockId)) : notes;
-}
-
-function addNote(d) {
-  const sheet = getSheet('NOTES');
-  const id = generateId();
-  const t  = now();
-  sheet.appendRow([
-    id,
-    d.stockId   || '',
-    d.stockName || '',
-    d.content   || '',
-    d.risks     || '',
-    d.links     || '',
-    t, t
-  ]);
-  return { success: true, id };
-}
-
-function updateNote(id, d) {
-  const row = findRowIndex('NOTES', id);
-  if (row < 0) return { error: '항목 없음' };
-  const sheet = getSheet('NOTES');
-  sheet.getRange(row, 4, 1, 3).setValues([[
-    d.content || '',
-    d.risks   || '',
-    d.links   || ''
-  ]]);
-  sheet.getRange(row, 8).setValue(now()); // updatedAt
-  return { success: true };
-}
-
-
-// ───────────────────────────────────────────────
-//  TRADES  매매일지
-//  컬럼: id | stockId | stockName | type | date |
-//        price | quantity | reason | emotion | memo | createdAt
-// ───────────────────────────────────────────────
-function getTrades(stockId) {
-  const trades = sheetToObjects('TRADES');
-  return stockId ? trades.filter(t => String(t.stockId) === String(stockId)) : trades;
-}
-
-function addTrade(d) {
-  const sheet = getSheet('TRADES');
-  const id = generateId();
-  sheet.appendRow([
-    id,
-    d.stockId   || '',
-    d.stockName || '',
-    d.type      || 'BUY',
-    d.date      || '',
-    Number(d.price)    || 0,
-    Number(d.quantity) || 0,
-    d.reason    || '',
-    d.emotion   || '',
-    d.memo      || '',
-    now()
-  ]);
-  return { success: true, id };
-}
-
-function updateTrade(id, d) {
-  const row = findRowIndex('TRADES', id);
-  if (row < 0) return { error: '항목 없음' };
-  const sheet = getSheet('TRADES');
-  sheet.getRange(row, 4, 1, 7).setValues([[
-    d.type      || 'BUY',
-    d.date      || '',
-    Number(d.price)    || 0,
-    Number(d.quantity) || 0,
-    d.reason    || '',
-    d.emotion   || '',
-    d.memo      || ''
-  ]]);
-  return { success: true };
-}
-
-
-// ───────────────────────────────────────────────
-//  SETUP  최초 1회 실행 → 시트 구조 생성
-//  Apps Script 편집기에서 직접 실행하세요
-// ───────────────────────────────────────────────
-function setupSheets() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-
-  function makeSheet(name, headers) {
-    let sheet = ss.getSheetByName(name);
-    if (!sheet) {
-      sheet = ss.insertSheet(name);
-    } else {
-      sheet.clearContents();
+// ════════════════════════════════════════════════════════════════
+//  GET 핸들러
+// ════════════════════════════════════════════════════════════════
+function doGet(e) {
+  try {
+    const action = (e.parameter && e.parameter.action) || '';
+    switch (action) {
+      case 'getStocks':   return jsonResponse(sheetToJson('stocks'));
+      case 'getTrades':   return jsonResponse(sheetToJson('trades'));
+      case 'getNotes':    return jsonResponse(sheetToJson('notes'));
+      case 'getAccounts': return jsonResponse(sheetToJson('accounts'));
+      default:
+        return jsonResponse({ ok: true, version: '2.0', message: 'StockNote API' });
     }
-    const headerRange = sheet.getRange(1, 1, 1, headers.length);
-    headerRange.setValues([headers]);
-    headerRange.setFontWeight('bold');
-    headerRange.setBackground('#0d1b2a');
-    headerRange.setFontColor('#ffffff');
-    sheet.setFrozenRows(1);
-
-    // 열 너비 자동 조정
-    for (let i = 1; i <= headers.length; i++) {
-      sheet.autoResizeColumn(i);
-    }
-    return sheet;
+  } catch(err) {
+    return jsonResponse({ error: err.message });
   }
-
-  makeSheet('STOCKS', [
-    'id','code','name','sector','tags',
-    'targetPrice','stopLoss','rating','holding','memo','createdAt'
-  ]);
-  makeSheet('NOTES', [
-    'id','stockId','stockName','content',
-    'risks','links','createdAt','updatedAt'
-  ]);
-  makeSheet('TRADES', [
-    'id','stockId','stockName','type','date',
-    'price','quantity','reason','emotion','memo','createdAt'
-  ]);
-
-  SpreadsheetApp.getUi().alert(
-    '✅ 시트 설정 완료!\n\n' +
-    'STOCKS / NOTES / TRADES 시트가 생성되었습니다.\n' +
-    '이제 웹 앱으로 배포하세요.'
-  );
 }
 
+// ════════════════════════════════════════════════════════════════
+//  POST 핸들러
+// ════════════════════════════════════════════════════════════════
+function doPost(e) {
+  try {
+    const body   = JSON.parse(e.postData.contents);
+    const action = body.action;
+    const data   = body.data || {};
+    const id     = body.id;
 
-// ───────────────────────────────────────────────
-//  TEST  편집기에서 직접 실행해 정상 동작 확인
-// ───────────────────────────────────────────────
-function testAddStock() {
-  const result = addStock({
-    code: '005930', name: '삼성전자', sector: '반도체',
-    tags: 'HBM,AI서버', targetPrice: 85000, stopLoss: 68000,
-    rating: 4, holding: '관심', memo: 'HBM3E 점유율 기대'
-  });
-  Logger.log(JSON.stringify(result));
-}
+    switch (action) {
 
-function testGetStocks() {
-  Logger.log(JSON.stringify(getStocks()));
+      // ── 관심종목 ───────────────────────────────────────────
+      case 'addStock': {
+        const sheet = getSheet('stocks');
+        const newId_ = data.id || newId();
+        const row = HEADERS.stocks.map(h =>
+          h === 'id' ? newId_ :
+          h === 'createdAt' ? new Date().toISOString() :
+          (data[h] !== undefined ? data[h] : '')
+        );
+        sheet.appendRow(row);
+        return jsonResponse({ ok: true, id: newId_ });
+      }
+      case 'updateStock': {
+        const sheet = getSheet('stocks');
+        const rowNum = findRowById(sheet, id);
+        if (rowNum < 0) return jsonResponse({ error: 'not found' });
+        HEADERS.stocks.forEach((h, i) => {
+          if (h !== 'id' && h !== 'createdAt' && data[h] !== undefined) {
+            sheet.getRange(rowNum, i + 1).setValue(data[h]);
+          }
+        });
+        return jsonResponse({ ok: true });
+      }
+      case 'deleteStock': {
+        const sheet = getSheet('stocks');
+        const rowNum = findRowById(sheet, id);
+        if (rowNum > 0) sheet.deleteRow(rowNum);
+        return jsonResponse({ ok: true });
+      }
+
+      // ── 매매일지 ───────────────────────────────────────────
+      case 'addTrade': {
+        const sheet = getSheet('trades');
+        const newId_ = data.id || newId();
+        const row = HEADERS.trades.map(h =>
+          h === 'id' ? newId_ :
+          h === 'createdAt' ? new Date().toISOString() :
+          (data[h] !== undefined ? data[h] : '')
+        );
+        sheet.appendRow(row);
+        return jsonResponse({ ok: true, id: newId_ });
+      }
+      case 'updateTrade': {
+        const sheet = getSheet('trades');
+        const rowNum = findRowById(sheet, id);
+        if (rowNum < 0) return jsonResponse({ error: 'not found' });
+        HEADERS.trades.forEach((h, i) => {
+          if (h !== 'id' && h !== 'createdAt' && data[h] !== undefined) {
+            sheet.getRange(rowNum, i + 1).setValue(data[h]);
+          }
+        });
+        return jsonResponse({ ok: true });
+      }
+      case 'deleteTrade': {
+        const sheet = getSheet('trades');
+        const rowNum = findRowById(sheet, id);
+        if (rowNum > 0) sheet.deleteRow(rowNum);
+        return jsonResponse({ ok: true });
+      }
+
+      // ── 종목노트 ───────────────────────────────────────────
+      case 'addNote': {
+        const sheet = getSheet('notes');
+        const newId_ = data.id || newId();
+        const row = HEADERS.notes.map(h =>
+          h === 'id' ? newId_ :
+          h === 'createdAt' ? new Date().toISOString() :
+          (data[h] !== undefined ? data[h] : '')
+        );
+        sheet.appendRow(row);
+        return jsonResponse({ ok: true, id: newId_ });
+      }
+      case 'updateNote': {
+        const sheet = getSheet('notes');
+        const rowNum = findRowById(sheet, id);
+        if (rowNum < 0) return jsonResponse({ error: 'not found' });
+        HEADERS.notes.forEach((h, i) => {
+          if (h !== 'id' && h !== 'createdAt' && data[h] !== undefined) {
+            sheet.getRange(rowNum, i + 1).setValue(data[h]);
+          }
+        });
+        return jsonResponse({ ok: true });
+      }
+      case 'deleteNote': {
+        const sheet = getSheet('notes');
+        const rowNum = findRowById(sheet, id);
+        if (rowNum > 0) sheet.deleteRow(rowNum);
+        return jsonResponse({ ok: true });
+      }
+
+      // ── 계좌 관리 ──────────────────────────────────────────
+      case 'addAccount': {
+        const sheet = getSheet('accounts');
+        const newId_ = data.id || newId();
+        const row = HEADERS.accounts.map(h =>
+          h === 'id' ? newId_ :
+          h === 'createdAt' ? new Date().toISOString() :
+          (data[h] !== undefined ? data[h] : '')
+        );
+        sheet.appendRow(row);
+        return jsonResponse({ ok: true, id: newId_ });
+      }
+      case 'updateAccount': {
+        const sheet = getSheet('accounts');
+        const rowNum = findRowById(sheet, id);
+        if (rowNum < 0) return jsonResponse({ error: 'not found' });
+        HEADERS.accounts.forEach((h, i) => {
+          if (h !== 'id' && h !== 'createdAt' && data[h] !== undefined) {
+            sheet.getRange(rowNum, i + 1).setValue(data[h]);
+          }
+        });
+        return jsonResponse({ ok: true });
+      }
+      case 'deleteAccount': {
+        const sheet = getSheet('accounts');
+        const rowNum = findRowById(sheet, id);
+        if (rowNum > 0) sheet.deleteRow(rowNum);
+        return jsonResponse({ ok: true });
+      }
+
+      default:
+        return jsonResponse({ error: 'Unknown action: ' + action });
+    }
+  } catch(err) {
+    return jsonResponse({ error: err.message });
+  }
 }
