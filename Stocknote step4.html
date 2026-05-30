@@ -2334,6 +2334,101 @@ const EMOTIONS = ['냉정','기대','흥분','불안','후회','만족'];
 const jt = { trades: [], editId: null, tradeType: 'BUY', emotion: '' };
 
 /* ── TradeStore ── */
+
+/* ════════════════════════════════════════════
+   계좌 저장소 — AccountStore
+   localStorage + Google Sheets 동기화
+════════════════════════════════════════════ */
+const AccountStore = {
+  get url()   { return localStorage.getItem(LS_URL) || ''; },
+  get isApi() { return !!this.url; },
+
+  async getAll() {
+    if (this.isApi) {
+      try {
+        const r = await fetch(`${this.url}?action=getAccounts`);
+        const d = await r.json();
+        if (d.error) throw new Error(d.error);
+        if (Array.isArray(d)) {
+          // 구글시트에서 받은 계좌 목록을 localStorage에도 캐시
+          localStorage.setItem(LS_ACCOUNTS, JSON.stringify(d));
+          return d;
+        }
+      } catch(e) {
+        console.warn('[AccountStore] API 오류, 로컬 캐시 사용:', e.message);
+      }
+    }
+    try { return JSON.parse(localStorage.getItem(LS_ACCOUNTS) || '[]'); }
+    catch { return []; }
+  },
+
+  async apiPost(body) {
+    const r = await fetch(this.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify(body)
+    });
+    return r.json();
+  },
+
+  async add(account) {
+    if (this.isApi) {
+      try {
+        const r = await this.apiPost({ action: 'addAccount', data: account });
+        if (r.error) throw new Error(r.error);
+        account.id = r.id || account.id;
+      } catch(e) {
+        console.warn('[AccountStore] API 저장 실패, 로컬만 저장:', e.message);
+      }
+    }
+    // 항상 로컬에도 저장 (오프라인 지원)
+    const list = this._local();
+    if (!list.find(a => a.id === account.id)) list.push(account);
+    this._save(list);
+    return account;
+  },
+
+  async update(id, name) {
+    if (this.isApi) {
+      try {
+        await this.apiPost({ action: 'updateAccount', id, data: { name } });
+      } catch(e) {
+        console.warn('[AccountStore] API 수정 실패:', e.message);
+      }
+    }
+    const list = this._local();
+    const a = list.find(x => x.id === id);
+    if (a) a.name = name;
+    this._save(list);
+  },
+
+  async del(id) {
+    if (this.isApi) {
+      try {
+        await this.apiPost({ action: 'deleteAccount', id });
+      } catch(e) {
+        console.warn('[AccountStore] API 삭제 실패:', e.message);
+      }
+    }
+    this._save(this._local().filter(a => a.id !== id));
+  },
+
+  _local() {
+    try { return JSON.parse(localStorage.getItem(LS_ACCOUNTS) || '[]'); }
+    catch { return []; }
+  },
+  _save(list) {
+    localStorage.setItem(LS_ACCOUNTS, JSON.stringify(list));
+  }
+};
+
+/* ── 계좌 목록 비동기 로드 ── */
+async function loadAccounts() {
+  acctList = await AccountStore.getAll();
+  renderAcctTabs();
+  if (typeof refreshAcctSelect === 'function') refreshAcctSelect();
+}
+
 const TradeStore = {
   get url()   { return localStorage.getItem(LS_URL) || ''; },
   get isApi() { return !!this.url; },
@@ -3149,39 +3244,60 @@ function renderAcctModalList() {
 }
 function startEditAcct(id) { acctEditing = id; renderAcctModalList(); const idx = acctList.findIndex(a => a.id === id); const inp = document.getElementById(`acct-edit-inp-${idx}`); if (inp) { inp.focus(); inp.select(); } }
 function cancelEditAcct() { acctEditing = null; renderAcctModalList(); }
-function confirmEditAcct(id, idx) {
+async function confirmEditAcct(id, idx) {
   const inp = document.getElementById(`acct-edit-inp-${idx}`); if (!inp) return;
   const newName = inp.value.trim(); const a = acctList.find(x => x.id === id); if (!a) return; const oldName = a.name;
   if (!newName) { toast('계좌명을 입력해주세요', 'err'); return; }
   if (newName !== oldName && acctList.some(x => x.name === newName)) { toast('이미 존재하는 계좌명입니다', 'err'); return; }
   a.name = newName;
+  // 거래 기록 계좌명 일괄 변경
   jt.trades.forEach(t => { if (t.acctName === oldName) t.acctName = newName; });
-  try { const list = JSON.parse(localStorage.getItem('sn_trades') || '[]'); list.forEach(t => { if (t.acctName === oldName) t.acctName = newName; }); localStorage.setItem('sn_trades', JSON.stringify(list)); } catch {}
+  // localStorage 거래 기록도 업데이트
+  try {
+    const list = JSON.parse(localStorage.getItem('sn_trades') || '[]');
+    list.forEach(t => { if (t.acctName === oldName) t.acctName = newName; });
+    localStorage.setItem('sn_trades', JSON.stringify(list));
+    // 구글시트 거래도 일괄 수정 (API 모드)
+    if (AccountStore.isApi) {
+      jt.trades
+        .filter(t => t.acctName === newName)
+        .forEach(t => TradeStore.update(t.id, { acctName: newName }).catch(() => {}));
+    }
+  } catch {}
   if (selectedAcct === oldName) { selectedAcct = newName; localStorage.setItem(LS_ACCT_SEL, newName); }
-  setAccountsStorage(acctList); acctEditing = null; renderAcctModalList(); renderAcctTabs();
+  await AccountStore.update(id, newName);
+  acctEditing = null; renderAcctModalList(); renderAcctTabs();
   if (typeof renderJournal === 'function') renderJournal();
   toast(`"${oldName}" → "${newName}" 수정됨`, 'ok');
 }
-function deleteAcct(id, name) {
+async function deleteAcct(id, name) {
   const cnt = jt.trades.filter(t => t.acctName === name).length;
   if (!confirm(cnt > 0 ? `"${name}" 계좌를 삭제하면 ${cnt}건의 거래에서 계좌 정보가 제거됩니다. 계속하시겠습니까?` : `"${name}" 계좌를 삭제하시겠습니까?`)) return;
   acctList = acctList.filter(a => a.id !== id);
   jt.trades.forEach(t => { if (t.acctName === name) t.acctName = ''; });
-  try { const list = JSON.parse(localStorage.getItem('sn_trades') || '[]'); list.forEach(t => { if (t.acctName === name) t.acctName = ''; }); localStorage.setItem('sn_trades', JSON.stringify(list)); } catch {}
+  try {
+    const list = JSON.parse(localStorage.getItem('sn_trades') || '[]');
+    list.forEach(t => { if (t.acctName === name) t.acctName = ''; });
+    localStorage.setItem('sn_trades', JSON.stringify(list));
+  } catch {}
   if (selectedAcct === name) { selectedAcct = '전체'; localStorage.setItem(LS_ACCT_SEL, '전체'); }
-  setAccountsStorage(acctList); renderAcctModalList(); renderAcctTabs();
+  await AccountStore.del(id);
+  renderAcctModalList(); renderAcctTabs();
   if (typeof renderJournal === 'function') renderJournal();
   toast(`"${name}" 계좌 삭제됨`, 'info');
 }
-function addAccount() {
+async function addAccount() {
   const inp = document.getElementById('new-acct-name'); const name = inp.value.trim();
   if (!name) { toast('계좌명을 입력해주세요', 'err'); return; }
   if (acctList.some(a => a.name === name)) { toast('이미 존재하는 계좌명입니다', 'err'); return; }
   const id = Date.now().toString(36) + Math.random().toString(36).substr(2,4);
-  acctList.push({ id, name }); setAccountsStorage(acctList);
+  const account = { id, name };
+  acctList.push(account);
+  // localStorage + 구글시트에 저장
+  await AccountStore.add(account);
   inp.value = ''; renderAcctModalList(); renderAcctTabs(); refreshAcctSelect();
   if (typeof renderJournal === 'function') renderJournal();
-  toast(`"${name}" 계좌 추가됨`, 'ok');
+  toast(`"${name}" 계좌가 추가되었습니다`, 'ok');
 }
 function saveAccounts() { setAccountsStorage(acctList); renderAcctTabs(); refreshAcctSelect(); closeAcctModal(); toast('계좌 설정이 저장되었습니다', 'ok'); }
 function refreshAcctSelect() {
@@ -4138,18 +4254,19 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 
-function init() {
+async function init() {
   if (localStorage.getItem(LS_SETUP)) hideBanner();
   const saved = localStorage.getItem(LS_URL);
   if (saved) document.getElementById('api-url-input').value = saved;
   updateBadge();
   renderPills();
   renderSectorOpts();
-  renderAcctTabs();
   // 뷰 모드 초기화
   setStockView(stockViewMode);
   setTradeView(tradeViewMode);
-  // 관심종목 + 거래 데이터 동시 로드 (새로고침 시 데이터 유지)
+  // 계좌 목록 먼저 로드 (구글시트 포함) → 이후 거래 로드 시 계좌명 정상 표시
+  await loadAccounts();
+  // 관심종목 + 거래 데이터 동시 로드
   loadStocks();
   loadTrades();
 }
