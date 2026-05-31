@@ -833,8 +833,8 @@
     .h-table tr:last-child td { border-bottom: none; }
     .h-table tbody tr:hover td { background: var(--surface2); }
     .h-num { font-family: 'JetBrains Mono', monospace; text-align: right; }
-    .pnl-pos { color: var(--green); font-weight: 700; }
-    .pnl-neg { color: var(--red);   font-weight: 700; }
+    .pnl-pos { color: #e11d48; font-weight: 700; }  /* 수익: 빨간색 (한국 상승 관례) */
+    .pnl-neg { color: #2563eb; font-weight: 700; }  /* 손실: 파란색 (한국 하락 관례) */
 
     /* 간단 지표 카드 (인사이트 행) */
     .insight-row {
@@ -933,8 +933,8 @@
     }
     .acct-stat-label { font-size: 10px; font-weight: 600; color: var(--text3); margin-bottom: 4px; letter-spacing: .3px; }
     .acct-stat-val   { font-size: 16px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-    .acct-stat-val.pos { color: var(--green); }
-    .acct-stat-val.neg { color: var(--red); }
+    .acct-stat-val.pos { color: #e11d48; }  /* 수익: 빨간색 */
+    .acct-stat-val.neg { color: #2563eb; }  /* 손실: 파란색 */
     .acct-stat-val.blue{ color: var(--blue); }
 
     /* 계좌별 월별 테이블 */
@@ -1204,8 +1204,8 @@
     .btn-refresh-price:hover { background: var(--blue); color: #fff; }
 
     /* 평가 손익 배지 */
-    .eval-pos { color: var(--green); }
-    .eval-neg { color: var(--red); }
+    .eval-pos { color: #e11d48; }  /* 평가수익: 빨간색 */
+    .eval-neg { color: #2563eb; }  /* 평가손실: 파란색 */
   </style>
 </head>
 <body>
@@ -3561,7 +3561,7 @@ function renderAccountPnL() {
     const isTotal = name === '전체';
     return `<div class="acct-pnl-card" style="${isTotal ? '--purple:#059669' : ''}">
       <div class="acct-pnl-label">🏦 ${esc(name)} <span style="font-weight:400;color:var(--text3)">(${d.trades}건)</span></div>
-      <div class="acct-pnl-val" style="color:var(--${rCls || 'text'});font-size:15px">
+      <div class="acct-pnl-val" style="color:${rCls==='green'?'#e11d48':rCls==='red'?'#2563eb':'var(--text)'};font-size:15px">
         실현 ${d.hasPnL ? rSign + Math.round(d.realPnL).toLocaleString() + '원' : '—'}
       </div>
       ${curPrices && Object.keys(curPrices).length
@@ -3733,7 +3733,7 @@ function renderStatsSummary() {
   const pnlEl = document.getElementById('as-pnl');
   if (sells.length) {
     pnlEl.textContent = sign + Math.round(total).toLocaleString() + '원';
-    pnlEl.className   = 'stat-val ' + (total > 0 ? 'green' : total < 0 ? 'red' : '');
+    pnlEl.className   = 'stat-val ' + (total > 0 ? 'pnl-pos' : total < 0 ? 'pnl-neg' : '');
   } else {
     pnlEl.textContent = '—';
     pnlEl.className   = 'stat-val';
