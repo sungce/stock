@@ -61,13 +61,85 @@
        초기 설정 배너
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
     #setup-banner {
-      background: linear-gradient(90deg, #fffbeb 0%, #fef9f0 100%);
-      border-bottom: 1px solid #fde68a;
-      padding: 11px 20px;
+      background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 50%, #fffbeb 100%);
+      border-bottom: 2px solid #93c5fd;
+      padding: 20px 24px;
       display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 0;
+    }
+    #setup-banner.hidden { display: none; }
+
+    .setup-title {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 14px;
+    }
+    .setup-title-icon { font-size: 24px; }
+    .setup-title-text { font-size: 16px; font-weight: 700; color: #1e40af; }
+    .setup-title-sub  { font-size: 12px; color: var(--text3); margin-left: 4px; }
+
+    .setup-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .setup-step {
+      background: #fff;
+      border: 1px solid #bfdbfe;
+      border-radius: var(--r-sm);
+      padding: 14px 16px;
+    }
+    .setup-step-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--blue); color: #fff;
+      font-size: 11px; font-weight: 700;
+      margin-right: 6px; flex-shrink: 0;
+    }
+    .setup-step-label {
+      font-size: 12px; font-weight: 700; color: var(--text2);
+      display: flex; align-items: center; margin-bottom: 8px;
+    }
+    .setup-input-row {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .setup-input-row input {
+      flex: 1; padding: 8px 10px; font-size: 12px;
+      border: 1px solid var(--border2); border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--surface); color: var(--text);
+      outline: none; transition: border-color .15s;
+      min-width: 0;
+    }
+    .setup-input-row input:focus { border-color: var(--blue); }
+    .setup-hint {
+      font-size: 10px; color: var(--text3); margin-top: 5px; line-height: 1.5;
+    }
+    .setup-hint a { color: var(--blue); text-decoration: underline; cursor: pointer; }
+
+    .setup-actions {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    }
+    .btn-connect-main {
+      background: var(--blue); color: #fff;
+      border: none; padding: 9px 22px;
+      border-radius: var(--r-sm); font-size: 13px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      box-shadow: 0 2px 8px rgba(37,99,235,.3);
+      transition: all .15s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-connect-main:hover { background: #1d4ed8; transform: translateY(-1px); }
+    .btn-skip-setup {
+      background: none; border: 1px solid var(--border2);
+      color: var(--text3); padding: 8px 16px;
+      border-radius: var(--r-sm); font-size: 12px;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .btn-skip-setup:hover { border-color: var(--text3); color: var(--text2); }
+    .setup-local-badge {
+      font-size: 11px; color: var(--text3);
+      display: flex; align-items: center; gap: 4px;
     }
     #setup-banner.hidden { display: none; }
 
@@ -192,7 +264,7 @@
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 12px; margin-bottom: 24px;
     }
 
@@ -200,7 +272,7 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--r);
-      padding: 16px 18px;
+      padding: 14px 16px;
       box-shadow: var(--shadow-sm);
       position: relative;
       overflow: hidden;
@@ -217,12 +289,15 @@
 
     .stat-label {
       font-size: 11px; color: var(--text3);
-      font-weight: 500; margin-bottom: 8px;
+      font-weight: 500; margin-bottom: 6px;
     }
 
     .stat-val {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 24px; font-weight: 500; color: var(--text);
+      font-size: 18px; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; min-width: 0;
+      line-height: 1.3;
     }
     .stat-val.blue  { color: var(--blue); }
     .stat-val.green { color: var(--green); }
@@ -1118,12 +1193,58 @@
 
 <!-- ── 초기 설정 배너 ── -->
 <div id="setup-banner">
-  <span class="banner-tag">⚙ SETUP</span>
-  <span class="banner-desc">Apps Script 웹앱 URL을 입력하면 구글 시트로 저장됩니다. 건너뛰면 브라우저 로컬에 저장됩니다.</span>
-  <input id="api-url-input" type="url"
-    placeholder="https://script.google.com/macros/s/AKfycbzufhMLY_J-KuruzFpbl_2EvPfZkubnoMK9KSYYV_OJgxxEsVZ4GwJZgBKkDPSGeFB9xQ/exec" />
-  <button class="btn-connect" onclick="saveApiUrl()">연결</button>
-  <button class="btn-text" onclick="skipSetup()">건너뛰기</button>
+  <div class="setup-title">
+    <span class="setup-title-icon">📊</span>
+    <span class="setup-title-text">StockNote 구글 시트 연동 설정</span>
+    <span class="setup-title-sub">— 데이터를 구글 시트에 저장하면 기기 간 공유가 가능합니다</span>
+  </div>
+
+  <div class="setup-steps">
+    <!-- Step 1: Spreadsheet ID -->
+    <div class="setup-step">
+      <div class="setup-step-label">
+        <span class="setup-step-num">1</span>
+        구글 스프레드시트 ID 입력
+      </div>
+      <div class="setup-input-row">
+        <input id="spreadsheet-id-input" type="text"
+          placeholder="예: 1x68B7wIl4yCu-56V-inmxQG..."
+          oninput="onSpreadsheetIdInput(this.value)" />
+      </div>
+      <div class="setup-hint">
+        스프레드시트 URL에서 <strong>/d/</strong> 와 <strong>/edit</strong> 사이의 긴 문자열<br>
+        예: docs.google.com/spreadsheets/d/<strong style="color:var(--blue)">여기가 ID</strong>/edit
+      </div>
+    </div>
+
+    <!-- Step 2: Apps Script URL -->
+    <div class="setup-step">
+      <div class="setup-step-label">
+        <span class="setup-step-num">2</span>
+        Apps Script 웹앱 URL 입력
+      </div>
+      <div class="setup-input-row">
+        <input id="api-url-input" type="url"
+          placeholder="https://script.google.com/macros/s/…/exec" />
+      </div>
+      <div class="setup-hint">
+        Apps Script 배포 후 받은 URL (exec로 끝남)<br>
+        자세한 설정 방법은 동봉된 <strong>구글시트_연동가이드.txt</strong> 참고
+      </div>
+    </div>
+  </div>
+
+  <div class="setup-actions">
+    <button class="btn-connect-main" onclick="saveApiUrl()">
+      🔗 구글 시트 연동 시작
+    </button>
+    <button class="btn-skip-setup" onclick="skipSetup()">
+      로컬 저장으로 시작 (연동 없이 사용)
+    </button>
+    <span class="setup-local-badge">
+      💡 나중에 설정하려면 상단 LOCAL 배지를 클릭하세요
+    </span>
+  </div>
 </div>
 
 <!-- ── 헤더 ── -->
@@ -1138,7 +1259,7 @@
     </nav>
     <div class="header-end" style="display:flex;align-items:center;gap:8px;">
       <button id="pwa-install-btn" onclick="pwaInstall()" title="앱으로 설치"><span>📲</span><span>설치</span></button>
-      <span id="mode-badge" class="mode-badge local">LOCAL</span>
+      <span id="mode-badge" class="mode-badge local" onclick="resetSetup()" title="클릭하여 연동 설정 변경">LOCAL</span>
     </div>
   </div>
 </header>
@@ -1926,19 +2047,31 @@ const Store = {
 /* ════════════════════════════════════════════
    SETUP BANNER
 ════════════════════════════════════════════ */
+function onSpreadsheetIdInput(val) {
+  // ID 입력 시 URL 미리보기 힌트 (선택적)
+  localStorage.setItem('sn_spreadsheet_id', val.trim());
+}
+
 function saveApiUrl() {
-  const url = document.getElementById('api-url-input').value.trim();
-  if (!url) { toast('URL을 입력해주세요', 'err'); return; }
-  if (!url.includes('script.google.com')) {
-    toast('올바른 Apps Script URL이 아닙니다', 'err'); return;
+  const url   = document.getElementById('api-url-input').value.trim();
+  const ssId  = document.getElementById('spreadsheet-id-input')
+                  ? document.getElementById('spreadsheet-id-input').value.trim()
+                  : '';
+
+  if (!url && !ssId) {
+    toast('Apps Script URL 또는 Spreadsheet ID를 입력해주세요', 'err'); return;
   }
-  localStorage.setItem(LS_URL, url);
+  if (url && !url.includes('script.google.com')) {
+    toast('올바른 Apps Script URL이 아닙니다\n(script.google.com 포함 필요)', 'err'); return;
+  }
+
+  if (ssId) localStorage.setItem('sn_spreadsheet_id', ssId);
+  if (url)  localStorage.setItem(LS_URL, url);
   localStorage.setItem(LS_SETUP, '1');
   hideBanner();
   updateBadge();
   loadStocks();
   loadTrades();
-  // 구글시트에서 계좌 목록 다시 로드
   loadAccounts().then(() => {
     toast('✅ 구글 시트 연동 완료! 계좌 ' + acctList.length + '개 로드됨', 'ok');
   });
@@ -1948,6 +2081,15 @@ function skipSetup() {
   localStorage.setItem(LS_SETUP, '1');
   hideBanner();
   toast('로컬 저장 모드로 시작합니다', 'info');
+}
+
+function resetSetup() {
+  // 배너를 다시 표시해서 설정 변경 가능
+  document.getElementById('setup-banner').classList.remove('hidden');
+  const urlInput = document.getElementById('api-url-input');
+  const ssInput  = document.getElementById('spreadsheet-id-input');
+  if (urlInput) urlInput.value = localStorage.getItem(LS_URL) || '';
+  if (ssInput)  ssInput.value  = localStorage.getItem('sn_spreadsheet_id') || '';
 }
 
 function hideBanner() {
@@ -4294,16 +4436,12 @@ async function init() {
   } catch(e) { console.warn('[Init] 데이터 정리 오류:', e.message); }
 
   if (localStorage.getItem(LS_SETUP)) hideBanner();
-  const saved = localStorage.getItem(LS_URL);
-  // 저장된 URL이 없으면 기본 API URL 자동 설정
-  const defaultUrl = 'https://script.google.com/macros/s/AKfycbzufhMLY_J-KuruzFpbl_2EvPfZkubnoMK9KSYYV_OJgxxEsVZ4GwJZgBKkDPSGeFB9xQ/exec';
-  if (saved) {
-    document.getElementById('api-url-input').value = saved;
-  } else {
-    document.getElementById('api-url-input').value = defaultUrl;
-    localStorage.setItem(LS_URL, defaultUrl);
-    updateBadge();
-  }
+  const saved  = localStorage.getItem(LS_URL) || '';
+  const savedId = localStorage.getItem('sn_spreadsheet_id') || '';
+  const urlEl  = document.getElementById('api-url-input');
+  const ssEl   = document.getElementById('spreadsheet-id-input');
+  if (urlEl && saved)   urlEl.value  = saved;
+  if (ssEl  && savedId) ssEl.value   = savedId;
   updateBadge();
   renderPills();
   renderSectorOpts();
