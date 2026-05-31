@@ -1851,10 +1851,15 @@ const Store = {
   async getAll() {
     if (this.isApi) {
       try {
-        const r = await fetch(`${this.url}?action=getStocks`);
+        const r = await fetch(this.url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+          body: JSON.stringify({ action: 'getStocks' }),
+          redirect: 'follow',
+        });
         const d = await r.json();
         if (d.error) throw new Error(d.error);
-        return d;
+        return Array.isArray(d) ? d : [];
       } catch (e) {
         toast('API 오류: ' + e.message, 'err');
         return JSON.parse(localStorage.getItem(LS_DATA) || '[]');
@@ -2237,7 +2242,16 @@ const LS_ACCOUNTS = 'sn_accounts';
 const LS_ACCT_SEL = 'sn_acct_selected';
 function getAccounts() { try { return JSON.parse(localStorage.getItem(LS_ACCOUNTS) || '[]'); } catch { return []; } }
 function setAccountsStorage(arr) { localStorage.setItem(LS_ACCOUNTS, JSON.stringify(arr)); }
-let acctList    = getAccounts();
+let acctList = (() => {
+  try {
+    const raw = JSON.parse(localStorage.getItem('sn_accounts') || '[]');
+    return raw.filter(item =>
+      item && item.id && item.name &&
+      !item.sector && !item.code && !item.stockName &&
+      !item.type && !item.content && !item.stockId
+    );
+  } catch { return []; }
+})();
 let acctEditing = null;
 let selectedAcct = localStorage.getItem(LS_ACCT_SEL) || '전체';
 
@@ -2337,112 +2351,142 @@ const jt = { trades: [], editId: null, tradeType: 'BUY', emotion: '' };
 
 /* ════════════════════════════════════════════
    계좌 저장소 — AccountStore
-   localStorage + Google Sheets 동기화
+   모든 통신 POST 방식 (GET redirect 이슈 없음)
 ════════════════════════════════════════════ */
 const AccountStore = {
   get url()   { return localStorage.getItem(LS_URL) || ''; },
   get isApi() { return !!this.url; },
 
-  async getAll() {
-    if (this.isApi) {
-      try {
-        const r = await fetch(`${this.url}?action=getAccounts`);
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        const d = await r.json();
-        if (d.error) {
-          if (d.error.includes('ACCOUNTS') || d.error.includes('시트')) {
-            console.warn('[AccountStore] ACCOUNTS 시트 없음 → setupSheets() 필요');
-            toast('⚠ 구글시트에 ACCOUNTS 시트가 없습니다. Apps Script에서 setupSheets()를 실행해주세요.', 'err');
-          }
-          throw new Error(d.error);
-        }
-        if (Array.isArray(d)) {
-          localStorage.setItem(LS_ACCOUNTS, JSON.stringify(d));
-          console.log('[AccountStore] 구글시트에서 계좌 로드:', d.length + '개');
-          return d;
-        }
-      } catch(e) {
-        console.warn('[AccountStore] API 오류, 로컬 캐시 사용:', e.message);
-      }
-    }
-    try { return JSON.parse(localStorage.getItem(LS_ACCOUNTS) || '[]'); }
-    catch { return []; }
-  },
-
-  async apiPost(body) {
+  /* 범용 POST 요청 */
+  async _post(body) {
     const r = await fetch(this.url, {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: JSON.stringify(body)
+      body:    JSON.stringify(body),
+      redirect: 'follow',
     });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     return r.json();
   },
 
-  async add(account) {
+  /* 계좌 유효성 검증 헬퍼 */
+  _isValidAccount(item) {
+    return item &&
+      typeof item === 'object' &&
+      item.id &&
+      item.name &&
+      typeof item.name === 'string' &&
+      item.name.length > 0 &&
+      !item.sector &&
+      !item.code &&
+      !item.stockName &&
+      !item.type &&
+      !item.content &&
+      !item.stockId;
+  },
+
+  /* 로컬 저장소에서 유효한 계좌만 읽기 */
+  _local() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(LS_ACCOUNTS) || '[]');
+      return raw.filter(a => this._isValidAccount(a));
+    } catch { return []; }
+  },
+
+  _save(list) {
+    localStorage.setItem(LS_ACCOUNTS, JSON.stringify(list));
+  },
+
+  /* 계좌 목록 로드 — POST 방식 */
+  async getAll() {
     if (this.isApi) {
       try {
-        const r = await this.apiPost({ action: 'addAccount', data: account });
-        if (r && r.error) {
-          // 시트 없음 오류 → 사용자에게 안내
-          if (r.error.includes('ACCOUNTS') || r.error.includes('시트')) {
-            toast('⚠ 구글시트에 ACCOUNTS 시트가 없습니다. Apps Script에서 setupSheets()를 실행해주세요.', 'err');
-          } else {
-            toast('계좌 저장 오류: ' + r.error, 'err');
-          }
-          throw new Error(r.error);
+        const d = await this._post({ action: 'getAccounts' });
+        if (d.error) throw new Error(d.error);
+        if (Array.isArray(d)) {
+          const valid = d.filter(a => this._isValidAccount(a));
+          this._save(valid);
+          console.log('[AccountStore] 구글시트 계좌 로드:', valid.length + '개');
+          return valid;
         }
-        if (r && r.id) account.id = r.id;
-        console.log('[AccountStore] 구글시트 저장 성공:', account.name);
       } catch(e) {
-        if (!e.message.includes('ACCOUNTS') && !e.message.includes('시트')) {
-          console.warn('[AccountStore] API 저장 실패:', e.message);
-        }
+        console.warn('[AccountStore] getAll 실패, 로컬 캐시 사용:', e.message);
       }
     }
-    // 항상 로컬에도 저장 (오프라인 지원)
+    return this._local();
+  },
+
+  /* 계좌 추가 */
+  async add(account) {
+    // 로컬 즉시 저장
     const list = this._local();
     if (!list.find(a => a.id === account.id)) list.push(account);
     this._save(list);
+
+    // API 저장 (비동기 - 실패해도 로컬은 유지)
+    if (this.isApi) {
+      try {
+        const r = await this._post({ action: 'addAccount', data: account });
+        if (r && r.error) throw new Error(r.error);
+        if (r && r.id) account.id = r.id;
+        console.log('[AccountStore] 구글시트 계좌 추가:', account.name);
+      } catch(e) {
+        console.warn('[AccountStore] 추가 실패 (로컬에는 저장됨):', e.message);
+        toast('계좌가 로컬에 저장됐습니다. 구글시트 동기화 실패: ' + e.message, 'info');
+      }
+    }
     return account;
   },
 
+  /* 계좌 수정 */
   async update(id, name) {
-    if (this.isApi) {
-      try {
-        await this.apiPost({ action: 'updateAccount', id, data: { name } });
-      } catch(e) {
-        console.warn('[AccountStore] API 수정 실패:', e.message);
-      }
-    }
     const list = this._local();
     const a = list.find(x => x.id === id);
     if (a) a.name = name;
     this._save(list);
-  },
 
-  async del(id) {
     if (this.isApi) {
       try {
-        await this.apiPost({ action: 'deleteAccount', id });
+        await this._post({ action: 'updateAccount', id, data: { name } });
       } catch(e) {
-        console.warn('[AccountStore] API 삭제 실패:', e.message);
+        console.warn('[AccountStore] 수정 실패:', e.message);
       }
     }
-    this._save(this._local().filter(a => a.id !== id));
   },
 
-  _local() {
-    try { return JSON.parse(localStorage.getItem(LS_ACCOUNTS) || '[]'); }
-    catch { return []; }
+  /* 계좌 삭제 */
+  async del(id) {
+    this._save(this._local().filter(a => a.id !== id));
+    if (this.isApi) {
+      try {
+        await this._post({ action: 'deleteAccount', id });
+      } catch(e) {
+        console.warn('[AccountStore] 삭제 실패:', e.message);
+      }
+    }
   },
-  _save(list) {
-    localStorage.setItem(LS_ACCOUNTS, JSON.stringify(list));
-  }
 };
 
 /* ── 계좌 목록 비동기 로드 ── */
 async function loadAccounts() {
-  acctList = await AccountStore.getAll();
+  // 먼저 로컬 유효 데이터로 즉시 렌더링 (빠른 응답)
+  try {
+    const localRaw = JSON.parse(localStorage.getItem(LS_ACCOUNTS) || '[]');
+    const localValid = localRaw.filter(item =>
+      item && item.id && item.name &&
+      !item.sector && !item.code && !item.stockName &&
+      !item.type && !item.content && !item.stockId
+    );
+    if (localValid.length > 0) {
+      acctList = localValid;
+      renderAcctTabs();
+      if (typeof refreshAcctSelect === 'function') refreshAcctSelect();
+    }
+  } catch {}
+
+  // API에서 갱신된 데이터 로드 (비동기)
+  const fresh = await AccountStore.getAll();
+  acctList = fresh;
   renderAcctTabs();
   if (typeof refreshAcctSelect === 'function') refreshAcctSelect();
 }
@@ -2454,7 +2498,12 @@ const TradeStore = {
   async getAll() {
     if (this.isApi) {
       try {
-        const r = await fetch(`${this.url}?action=getTrades`);
+        const r = await fetch(this.url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+          body: JSON.stringify({ action: 'getTrades' }),
+          redirect: 'follow',
+        });
         const d = await r.json();
         if (d.error) throw new Error(d.error);
         return Array.isArray(d) ? d : [];
@@ -2707,27 +2756,32 @@ function openTradeModal(trade = null) {
     st.stocks.map(s => `<option value="${esc(s.name)}">${esc(s.name)}${s.code ? ' (' + s.code + ')' : ''}</option>`).join('');
   if (trade) sel.value = trade.stockName || '';
 
-  // 계좌 목록 채우기
+  // 계좌 목록 채우기 (유효한 계좌만 표시)
   const acctSel = document.getElementById('jf-acct');
   if (acctSel) {
-    const accounts = (typeof acctList !== 'undefined') ? acctList : [];
+    const rawAccounts = (typeof acctList !== 'undefined') ? acctList : [];
+    // 계좌 형식 검증: {id, name}만 있고 sector/code/stockName 없어야 함
+    const accounts = rawAccounts.filter(a =>
+      a && a.id && a.name && !a.sector && !a.code && !a.stockName && !a.type
+    );
     acctSel.innerHTML = '<option value="">계좌 선택… (미선택 가능)</option>' +
       accounts.map(a => `<option value="${esc(a.name)}">${esc(a.name)}</option>`).join('');
     // 편집 시 기존 계좌 복원, 신규 시 현재 탭 계좌 자동 선택
     if (trade && trade.acctName) {
-      // 옵션 목록에 해당 값이 있는지 확인 후 설정
-      const found = [...acctSel.options].some(o => o.value === trade.acctName);
-      if (found) {
+      // 유효한 계좌인지 먼저 확인 (acctList에 있는 계좌만 복원)
+      const isValidAcct = accounts.some(a => a.name === trade.acctName);
+      if (isValidAcct) {
         acctSel.value = trade.acctName;
       } else {
-        // 등록되지 않은 계좌명이면 옵션에 임시 추가 후 선택
-        const opt = document.createElement('option');
-        opt.value = trade.acctName; opt.textContent = trade.acctName;
-        acctSel.appendChild(opt);
-        acctSel.value = trade.acctName;
+        // 유효하지 않은 acctName(종목명 등 오염 데이터) → 빈값 처리
+        acctSel.value = '';
+        if (trade.acctName) {
+          console.warn('[openTradeModal] 유효하지 않은 acctName 무시:', trade.acctName);
+        }
       }
     } else if (typeof selectedAcct !== 'undefined' && selectedAcct !== '전체') {
-      acctSel.value = selectedAcct;
+      const tabAcctValid = accounts.some(a => a.name === selectedAcct);
+      if (tabAcctValid) acctSel.value = selectedAcct;
     }
   }
 
@@ -2894,7 +2948,12 @@ const NoteStore = {
   async getAll() {
     if (this.isApi) {
       try {
-        const r = await fetch(`${this.url}?action=getNotes`);
+        const r = await fetch(this.url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+          body: JSON.stringify({ action: 'getNotes' }),
+          redirect: 'follow',
+        });
         const d = await r.json();
         if (d.error) throw new Error(d.error);
         return Array.isArray(d) ? d : [];
@@ -4191,6 +4250,43 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 async function init() {
+  // ── 오염 데이터 자동 정리 ──────────────────────────────
+  // 이전 Code.gs 버그: getAccounts→getStocks 반환으로 관심종목이 sn_accounts에 저장됨
+  // 또는 addAccount→addNote로 NOTES 데이터가 저장됨
+  try {
+    // 1) sn_accounts 정리: 계좌 형식 = {id, name, createdAt}만 허용
+    const rawAccts = JSON.parse(localStorage.getItem(LS_ACCOUNTS) || '[]');
+    const cleanAccts = rawAccts.filter(item =>
+      item && typeof item === 'object' &&
+      item.id && item.name &&
+      typeof item.name === 'string' &&
+      !item.sector && !item.code && !item.stockName &&
+      !item.type && !item.content && !item.stockId
+    );
+    if (cleanAccts.length !== rawAccts.length) {
+      console.log('[Init] sn_accounts 정리:', rawAccts.length, '→', cleanAccts.length, '개');
+      localStorage.setItem(LS_ACCOUNTS, JSON.stringify(cleanAccts));
+    }
+
+    // 2) sn_trades 정리: acctName이 유효한 계좌명인지 확인
+    //    유효한 계좌 이름 목록
+    const validAcctNames = new Set(cleanAccts.map(a => a.name));
+    const rawTrades = JSON.parse(localStorage.getItem('sn_trades') || '[]');
+    let tradesCleaned = false;
+    const cleanTrades = rawTrades.map(t => {
+      if (t.acctName && !validAcctNames.has(t.acctName)) {
+        // acctName이 유효한 계좌가 아님 → 빈값으로 초기화
+        tradesCleaned = true;
+        return { ...t, acctName: '' };
+      }
+      return t;
+    });
+    if (tradesCleaned) {
+      console.log('[Init] sn_trades 오염된 acctName 정리 완료');
+      localStorage.setItem('sn_trades', JSON.stringify(cleanTrades));
+    }
+  } catch(e) { console.warn('[Init] 데이터 정리 오류:', e.message); }
+
   if (localStorage.getItem(LS_SETUP)) hideBanner();
   const saved = localStorage.getItem(LS_URL);
   // 저장된 URL이 없으면 기본 API URL 자동 설정
