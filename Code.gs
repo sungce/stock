@@ -1,7 +1,9 @@
 // ═══════════════════════════════════════════════════════════
-//  주식노트 — Google Apps Script 백엔드  (Code.gs)
+//  StockNote — Google Apps Script 백엔드  (Code.gs)
 //  배포: 확장 프로그램 > Apps Script > 배포 > 웹 앱
 //       실행 계정: 나 / 액세스 권한: 모든 사용자
+//
+//  ※ 최초 1회: 편집기에서 setupSheets() 함수를 직접 실행하세요
 // ═══════════════════════════════════════════════════════════
 
 // ① 스프레드시트 ID를 여기에 붙여넣으세요
@@ -17,12 +19,12 @@ function doGet(e) {
     const p = e.parameter;
     let result;
     switch (p.action) {
-      case 'getAccounts': return getAccounts();
-      case 'getStocks':  result = getStocks();             break;
-      case 'getNotes':   result = getNotes(p.stockId);     break;
-      case 'getTrades':  result = getTrades(p.stockId);    break;
-      case 'ping':       result = { ok: true, ts: new Date().toISOString() }; break;
-      default:           result = { error: '알 수 없는 액션: ' + p.action };
+      case 'getStocks':   result = getStocks();            break;
+      case 'getTrades':   result = getTrades(p.stockId);   break;
+      case 'getNotes':    result = getNotes(p.stockId);    break;
+      case 'getAccounts': result = getAccounts();          break;  // ✅ 수정: 계좌 전용 함수 호출
+      case 'ping':        result = { ok: true, ts: new Date().toISOString() }; break;
+      default:            result = { error: '알 수 없는 액션: ' + p.action };
     }
     return jsonRes(result);
   } catch (err) {
@@ -46,21 +48,22 @@ function doPost(e) {
   try {
     let result;
     switch (body.action) {
-      // ── 관심종목 ──
-      case 'addStock':    result = addStock(body.data);           break;
-      case 'updateStock': result = updateStock(body.id, body.data); break;
-      case 'deleteStock': result = deleteById('STOCKS', body.id); break;
-      // ── 종목 노트 ──
-      case 'addNote':     result = addNote(body.data);            break;
-      case 'updateNote':  result = updateNote(body.id, body.data); break;
-      case 'deleteNote':  result = deleteById('NOTES', body.id);  break;
-      // ── 매매일지 ──
-      case 'addAccount':    return addAccount(data.data);
-      case 'updateAccount': return updateAccount(data.id, data.data);
-      case 'deleteAccount': return deleteAccount(data.id);
-      case 'addTrade':    result = addTrade(body.data);           break;
-      case 'updateTrade': result = updateTrade(body.id, body.data); break;
-      case 'deleteTrade': result = deleteById('TRADES', body.id); break;
+      // ── 관심종목 ──────────────────────────────
+      case 'addStock':      result = addStock(body.data);              break;
+      case 'updateStock':   result = updateStock(body.id, body.data);  break;
+      case 'deleteStock':   result = deleteById('STOCKS', body.id);    break;
+      // ── 종목노트 ──────────────────────────────
+      case 'addNote':       result = addNote(body.data);               break;
+      case 'updateNote':    result = updateNote(body.id, body.data);   break;
+      case 'deleteNote':    result = deleteById('NOTES', body.id);     break;
+      // ── 매매일지 ──────────────────────────────
+      case 'addTrade':      result = addTrade(body.data);              break;
+      case 'updateTrade':   result = updateTrade(body.id, body.data);  break;
+      case 'deleteTrade':   result = deleteById('TRADES', body.id);    break;
+      // ── 계좌 관리 ─────────────────────────────  ✅ 수정: 계좌 전용 함수 호출
+      case 'addAccount':    result = addAccount(body.data);            break;
+      case 'updateAccount': result = updateAccount(body.id, body.data); break;
+      case 'deleteAccount': result = deleteById('ACCOUNTS', body.id);  break;
       default: result = { error: '알 수 없는 액션: ' + body.action };
     }
     return jsonRes(result);
@@ -90,7 +93,9 @@ function now() {
 function getSheet(name) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sheet = ss.getSheetByName(name);
-  if (!sheet) throw new Error(`시트 "${name}" 를 찾을 수 없습니다. setupSheets() 를 먼저 실행하세요.`);
+  if (!sheet) throw new Error(
+    `시트 "${name}"를 찾을 수 없습니다. 편집기에서 setupSheets()를 먼저 실행하세요.`
+  );
   return sheet;
 }
 
@@ -105,7 +110,10 @@ function sheetToObjects(sheetName) {
     .filter(row => row[0] !== '' && row[0] !== null) // 빈 행 제외
     .map(row => {
       const obj = {};
-      headers.forEach((h, i) => { obj[h] = row[i]; });
+      headers.forEach((h, i) => {
+        // 숫자형 컬럼은 문자열로 변환하여 일관성 유지
+        obj[h] = (row[i] === null || row[i] === undefined) ? '' : String(row[i]);
+      });
       return obj;
     });
 }
@@ -113,9 +121,11 @@ function sheetToObjects(sheetName) {
 // ID로 행 번호(1-based) 검색
 function findRowIndex(sheetName, id) {
   const sheet = getSheet(sheetName);
-  const ids   = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 1), 1).getValues();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return -1;
+  const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
   for (let i = 0; i < ids.length; i++) {
-    if (String(ids[i][0]) === String(id)) return i + 2; // +2: 헤더 행 + 0-index
+    if (String(ids[i][0]) === String(id)) return i + 2;
   }
   return -1;
 }
@@ -142,15 +152,15 @@ function addStock(d) {
   const id = generateId();
   sheet.appendRow([
     id,
-    d.code        || '',
-    d.name        || '',
-    d.sector      || '기타',
-    d.tags        || '',
+    d.code              || '',
+    d.name              || '',
+    d.sector            || '기타',
+    d.tags              || '',
     Number(d.targetPrice) || 0,
     Number(d.stopLoss)    || 0,
     Number(d.rating)      || 3,
-    d.holding     || '관심',
-    d.memo        || '',
+    d.holding           || '관심',
+    d.memo              || '',
     now()
   ]);
   return { success: true, id };
@@ -160,24 +170,24 @@ function updateStock(id, d) {
   const row = findRowIndex('STOCKS', id);
   if (row < 0) return { error: '항목 없음' };
   const sheet = getSheet('STOCKS');
-  // col 2~10 업데이트 (id, createdAt 제외)
+  // col 2~10 업데이트 (id=1, createdAt=11 제외)
   sheet.getRange(row, 2, 1, 9).setValues([[
-    d.code        || '',
-    d.name        || '',
-    d.sector      || '기타',
-    d.tags        || '',
+    d.code              || '',
+    d.name              || '',
+    d.sector            || '기타',
+    d.tags              || '',
     Number(d.targetPrice) || 0,
     Number(d.stopLoss)    || 0,
     Number(d.rating)      || 3,
-    d.holding     || '관심',
-    d.memo        || ''
+    d.holding           || '관심',
+    d.memo              || ''
   ]]);
   return { success: true };
 }
 
 
 // ───────────────────────────────────────────────
-//  NOTES  종목 노트
+//  NOTES  종목노트
 //  컬럼: id | stockId | stockName | content |
 //        risks | links | createdAt | updatedAt
 // ───────────────────────────────────────────────
@@ -217,13 +227,13 @@ function updateNote(id, d) {
 
 
 // ───────────────────────────────────────────────
-//  TRADES  매매일지
-//  컬럼: id | stockId | stockName | type | date |
-//        price | quantity | reason | emotion | memo | createdAt
+//  TRADES  매매일지                              ✅ 수정: acctName, avgBuyPrice 추가
+//  컬럼: id | stockName | acctName | type | date |
+//        price | quantity | avgBuyPrice | reason | emotion | memo | createdAt
 // ───────────────────────────────────────────────
 function getTrades(stockId) {
   const trades = sheetToObjects('TRADES');
-  return stockId ? trades.filter(t => String(t.stockId) === String(stockId)) : trades;
+  return stockId ? trades.filter(t => String(t.stockName) === String(stockId)) : trades;
 }
 
 function addTrade(d) {
@@ -231,15 +241,16 @@ function addTrade(d) {
   const id = generateId();
   sheet.appendRow([
     id,
-    d.stockId   || '',
-    d.stockName || '',
-    d.type      || 'BUY',
-    d.date      || '',
-    Number(d.price)    || 0,
-    Number(d.quantity) || 0,
-    d.reason    || '',
-    d.emotion   || '',
-    d.memo      || '',
+    d.stockName         || '',
+    d.acctName          || '',          // ✅ 계좌명
+    d.type              || 'BUY',
+    d.date              || '',
+    Number(d.price)     || 0,
+    Number(d.quantity)  || 0,
+    Number(d.avgBuyPrice) || 0,         // ✅ 평균매수가
+    d.reason            || '',
+    d.emotion           || '',
+    d.memo              || '',
     now()
   ]);
   return { success: true, id };
@@ -249,27 +260,59 @@ function updateTrade(id, d) {
   const row = findRowIndex('TRADES', id);
   if (row < 0) return { error: '항목 없음' };
   const sheet = getSheet('TRADES');
-  sheet.getRange(row, 4, 1, 7).setValues([[
-    d.type      || 'BUY',
-    d.date      || '',
-    Number(d.price)    || 0,
-    Number(d.quantity) || 0,
-    d.reason    || '',
-    d.emotion   || '',
-    d.memo      || ''
+  // col 2~11 업데이트 (id=1, createdAt=12 제외)
+  sheet.getRange(row, 2, 1, 10).setValues([[
+    d.stockName           || '',
+    d.acctName            || '',        // ✅ 계좌명
+    d.type                || 'BUY',
+    d.date                || '',
+    Number(d.price)       || 0,
+    Number(d.quantity)    || 0,
+    Number(d.avgBuyPrice) || 0,         // ✅ 평균매수가
+    d.reason              || '',
+    d.emotion             || '',
+    d.memo                || ''
   ]]);
   return { success: true };
 }
 
 
 // ───────────────────────────────────────────────
-//  SETUP  최초 1회 실행 → 시트 구조 생성
+//  ACCOUNTS  계좌 관리                           ✅ 신규 추가
+//  컬럼: id | name | createdAt
+// ───────────────────────────────────────────────
+function getAccounts() {
+  return sheetToObjects('ACCOUNTS');
+}
+
+function addAccount(d) {
+  const sheet = getSheet('ACCOUNTS');
+  const id = d.id || generateId();
+  sheet.appendRow([
+    id,
+    d.name || '',
+    now()
+  ]);
+  return { success: true, id };
+}
+
+function updateAccount(id, d) {
+  const row = findRowIndex('ACCOUNTS', id);
+  if (row < 0) return { error: '항목 없음' };
+  const sheet = getSheet('ACCOUNTS');
+  sheet.getRange(row, 2).setValue(d.name || ''); // name 컬럼만 업데이트
+  return { success: true };
+}
+
+
+// ───────────────────────────────────────────────
+//  SETUP  최초 1회 실행 → 시트 구조 생성        ✅ ACCOUNTS, TRADES 컬럼 수정
 //  Apps Script 편집기에서 직접 실행하세요
 // ───────────────────────────────────────────────
 function setupSheets() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
 
-  function makeSheet(name, headers) {
+  function makeSheet(name, headers, color) {
     let sheet = ss.getSheetByName(name);
     if (!sheet) {
       sheet = ss.insertSheet(name);
@@ -279,34 +322,37 @@ function setupSheets() {
     const headerRange = sheet.getRange(1, 1, 1, headers.length);
     headerRange.setValues([headers]);
     headerRange.setFontWeight('bold');
-    headerRange.setBackground('#0d1b2a');
+    headerRange.setBackground(color || '#0d1b2a');
     headerRange.setFontColor('#ffffff');
     sheet.setFrozenRows(1);
-
-    // 열 너비 자동 조정
-    for (let i = 1; i <= headers.length; i++) {
-      sheet.autoResizeColumn(i);
-    }
+    for (let i = 1; i <= headers.length; i++) sheet.autoResizeColumn(i);
     return sheet;
   }
 
   makeSheet('STOCKS', [
     'id','code','name','sector','tags',
     'targetPrice','stopLoss','rating','holding','memo','createdAt'
-  ]);
+  ], '#1e40af');
+
+  makeSheet('TRADES', [
+    'id','stockName','acctName','type','date',       // ✅ acctName 추가
+    'price','quantity','avgBuyPrice',                 // ✅ avgBuyPrice 추가
+    'reason','emotion','memo','createdAt'
+  ], '#065f46');
+
   makeSheet('NOTES', [
     'id','stockId','stockName','content',
     'risks','links','createdAt','updatedAt'
-  ]);
-  makeSheet('TRADES', [
-    'id','stockId','stockName','type','date',
-    'price','quantity','reason','emotion','memo','createdAt'
-  ]);
+  ], '#7e22ce');
+
+  makeSheet('ACCOUNTS', [                             // ✅ 신규 시트
+    'id','name','createdAt'
+  ], '#92400e');
 
   SpreadsheetApp.getUi().alert(
     '✅ 시트 설정 완료!\n\n' +
-    'STOCKS / NOTES / TRADES 시트가 생성되었습니다.\n' +
-    '이제 웹 앱으로 배포하세요.'
+    'STOCKS / TRADES / NOTES / ACCOUNTS 시트가 생성되었습니다.\n' +
+    '이제 배포 > 배포 관리 > 새 버전으로 배포하세요.'
   );
 }
 
@@ -325,4 +371,23 @@ function testAddStock() {
 
 function testGetStocks() {
   Logger.log(JSON.stringify(getStocks()));
+}
+
+function testAddAccount() {
+  const result = addAccount({ name: '키움증권' });
+  Logger.log(JSON.stringify(result));
+}
+
+function testGetAccounts() {
+  Logger.log(JSON.stringify(getAccounts()));
+}
+
+function testAddTrade() {
+  const result = addTrade({
+    stockName: '삼성전자', acctName: '키움증권',
+    type: 'BUY', date: '2026-05-01',
+    price: 73000, quantity: 10, avgBuyPrice: 0,
+    reason: '신규진입', emotion: '😊', memo: '테스트'
+  });
+  Logger.log(JSON.stringify(result));
 }
