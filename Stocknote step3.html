@@ -1115,7 +1115,7 @@
   <span class="banner-tag">⚙ SETUP</span>
   <span class="banner-desc">Apps Script 웹앱 URL을 입력하면 구글 시트로 저장됩니다. 건너뛰면 브라우저 로컬에 저장됩니다.</span>
   <input id="api-url-input" type="url"
-    placeholder="https://script.google.com/macros/s/…/exec" />
+    placeholder="https://script.google.com/macros/s/AKfycbzufhMLY_J-KuruzFpbl_2EvPfZkubnoMK9KSYYV_OJgxxEsVZ4GwJZgBKkDPSGeFB9xQ/exec" />
   <button class="btn-connect" onclick="saveApiUrl()">연결</button>
   <button class="btn-text" onclick="skipSetup()">건너뛰기</button>
 </div>
@@ -4171,7 +4171,15 @@ window.addEventListener('DOMContentLoaded', () => {
 async function init() {
   if (localStorage.getItem(LS_SETUP)) hideBanner();
   const saved = localStorage.getItem(LS_URL);
-  if (saved) document.getElementById('api-url-input').value = saved;
+  // 저장된 URL이 없으면 기본 API URL 자동 설정
+  const defaultUrl = 'https://script.google.com/macros/s/AKfycbzufhMLY_J-KuruzFpbl_2EvPfZkubnoMK9KSYYV_OJgxxEsVZ4GwJZgBKkDPSGeFB9xQ/exec';
+  if (saved) {
+    document.getElementById('api-url-input').value = saved;
+  } else {
+    document.getElementById('api-url-input').value = defaultUrl;
+    localStorage.setItem(LS_URL, defaultUrl);
+    updateBadge();
+  }
   updateBadge();
   renderPills();
   renderSectorOpts();
