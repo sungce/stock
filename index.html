@@ -2347,7 +2347,11 @@ function saveApiUrl() {
   hideBanner();
   updateBadge();
   loadStocks();
-  toast('✅ 구글 시트 연동 완료!', 'ok');
+  loadTrades();
+  // 구글시트에서 계좌 목록 다시 로드
+  loadAccounts().then(() => {
+    toast('✅ 구글 시트 연동 완료! 계좌 ' + acctList.length + '개 로드됨', 'ok');
+  });
 }
 
 function skipSetup() {
@@ -2765,11 +2769,18 @@ const AccountStore = {
     if (this.isApi) {
       try {
         const r = await fetch(`${this.url}?action=getAccounts`);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
         const d = await r.json();
-        if (d.error) throw new Error(d.error);
+        if (d.error) {
+          if (d.error.includes('ACCOUNTS') || d.error.includes('시트')) {
+            console.warn('[AccountStore] ACCOUNTS 시트 없음 → setupSheets() 필요');
+            toast('⚠ 구글시트에 ACCOUNTS 시트가 없습니다. Apps Script에서 setupSheets()를 실행해주세요.', 'err');
+          }
+          throw new Error(d.error);
+        }
         if (Array.isArray(d)) {
-          // 구글시트에서 받은 계좌 목록을 localStorage에도 캐시
           localStorage.setItem(LS_ACCOUNTS, JSON.stringify(d));
+          console.log('[AccountStore] 구글시트에서 계좌 로드:', d.length + '개');
           return d;
         }
       } catch(e) {
@@ -2793,10 +2804,21 @@ const AccountStore = {
     if (this.isApi) {
       try {
         const r = await this.apiPost({ action: 'addAccount', data: account });
-        if (r.error) throw new Error(r.error);
-        account.id = r.id || account.id;
+        if (r && r.error) {
+          // 시트 없음 오류 → 사용자에게 안내
+          if (r.error.includes('ACCOUNTS') || r.error.includes('시트')) {
+            toast('⚠ 구글시트에 ACCOUNTS 시트가 없습니다. Apps Script에서 setupSheets()를 실행해주세요.', 'err');
+          } else {
+            toast('계좌 저장 오류: ' + r.error, 'err');
+          }
+          throw new Error(r.error);
+        }
+        if (r && r.id) account.id = r.id;
+        console.log('[AccountStore] 구글시트 저장 성공:', account.name);
       } catch(e) {
-        console.warn('[AccountStore] API 저장 실패, 로컬만 저장:', e.message);
+        if (!e.message.includes('ACCOUNTS') && !e.message.includes('시트')) {
+          console.warn('[AccountStore] API 저장 실패:', e.message);
+        }
       }
     }
     // 항상 로컬에도 저장 (오프라인 지원)
