@@ -837,8 +837,8 @@
     .acct-section-header { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; }
     .acct-section-title { font-size: 13px; font-weight: 700; color: var(--text2); }
     .acct-section-pnl { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 100px; }
-    .acct-section-pnl.pos { background: var(--green-dim); color: var(--green); }
-    .acct-section-pnl.neg { background: var(--red-dim);   color: var(--red); }
+    .acct-section-pnl.pos { background: #fff1f2; color: #e11d48; }  /* 수익: 빨간색 */
+    .acct-section-pnl.neg { background: #eff6ff; color: #2563eb; }  /* 손실: 파란색 */
     .acct-section-pnl.zer { background: var(--surface2);  color: var(--text3); }
     .acct-section-line { flex: 1; height: 1px; background: var(--border2); }
     
@@ -857,7 +857,7 @@
     .curprice-input:focus { border-color: var(--blue); }
     .btn-refresh-price { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue-soft); padding: 5px 14px; border-radius: var(--r-sm); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
     .btn-refresh-price:hover { background: var(--blue); color: #fff; }
-    .eval-pos { color: var(--green); } .eval-neg { color: var(--red); }
+    .eval-pos { color: #e11d48; } .eval-neg { color: #2563eb; }
     
     /* ━━━━━━ 계좌별 통계 분석 CSS ━━━━━━ */
     .acct-stat-tab-wrap {
@@ -910,8 +910,8 @@
     }
     .acct-stat-label { font-size: 10px; font-weight: 600; color: var(--text3); margin-bottom: 4px; letter-spacing: .3px; }
     .acct-stat-val   { font-size: 16px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-    .acct-stat-val.pos { color: var(--green); }
-    .acct-stat-val.neg { color: var(--red); }
+    .acct-stat-val.pos { color: #e11d48; }  /* 수익: 빨간색 */
+    .acct-stat-val.neg { color: #2563eb; }  /* 손실: 파란색 */
     .acct-stat-val.blue{ color: var(--blue); }
 
     /* 계좌별 월별 테이블 */
@@ -1097,6 +1097,12 @@
       to   { opacity:1; transform: translateX(-50%) translateY(0); }
     }
 
+    
+    /* ── 손익 색상 (한국 관례: 수익=빨간색, 손실=파란색) ── */
+    .pnl-pos { color: #e11d48 !important; font-weight: 700; }
+    .pnl-neg { color: #2563eb !important; font-weight: 700; }
+    .eval-pos { color: #e11d48 !important; }
+    .eval-neg { color: #2563eb !important; }
     @media (max-width: 620px) {
       .form-grid { grid-template-columns: 1fr; }
       .stats-row { grid-template-columns: repeat(2,1fr); }
@@ -3354,7 +3360,7 @@ function renderCurPriceInputs() {
       const ev   = (Number(cur) - avgBuy) * d.qty;
       const sign = ev >= 0 ? '+' : '';
       const pct  = ((Number(cur) - avgBuy) / avgBuy * 100).toFixed(1);
-      const cls  = ev > 0 ? 'color:var(--green)' : ev < 0 ? 'color:var(--red)' : '';
+      const cls  = ev > 0 ? 'color:#e11d48' : ev < 0 ? 'color:#2563eb' : '';
       evalHtml = `<span style="font-size:10px;${cls};font-weight:600;font-family:monospace;white-space:nowrap;">${sign}${Math.round(ev).toLocaleString()}원(${sign}${pct}%)</span>`;
     }
     return `<div class="curprice-row" style="flex-wrap:wrap;gap:4px;">
@@ -3464,7 +3470,7 @@ function renderAccountPnL() {
     const isTotal = name === '전체';
     return `<div class="acct-pnl-card" style="${isTotal ? '--purple:#059669' : ''}">
       <div class="acct-pnl-label">🏦 ${esc(name)} <span style="font-weight:400;color:var(--text3)">(${d.trades}건)</span></div>
-      <div class="acct-pnl-val" style="color:var(--${rCls || 'text'});font-size:15px">
+      <div class="acct-pnl-val" style="color:${rCls==='green'?'#e11d48':rCls==='red'?'#2563eb':'var(--text)'};font-size:15px">
         실현 ${d.hasPnL ? rSign + Math.round(d.realPnL).toLocaleString() + '원' : '—'}
       </div>
       ${curPrices && Object.keys(curPrices).length
@@ -3649,7 +3655,7 @@ function renderStatsSummary() {
   const pnlEl = document.getElementById('as-pnl');
   if (sells.length) {
     pnlEl.textContent = sign + Math.round(total).toLocaleString() + '원';
-    pnlEl.className   = 'stat-val ' + (total > 0 ? 'green' : total < 0 ? 'red' : '');
+    pnlEl.className   = 'stat-val ' + (total > 0 ? 'pnl-pos' : total < 0 ? 'pnl-neg' : '');
   } else {
     pnlEl.textContent = '—';
     pnlEl.className   = 'stat-val';
